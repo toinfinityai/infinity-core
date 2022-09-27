@@ -252,7 +252,7 @@ def submit_batch_to_api(
         raise ValueError("All batch jobs failed in submission")
 
     # Submit the rest of the jobs with the obtained unique batch ID.
-    for params in tqdm(job_params[jidx:]):
+    for params in job_params[jidx:]:
         r = requests.post(
             f"{server}{run_endpoint}",
             json={
@@ -309,7 +309,7 @@ def download_completed_jobs(completed_jobs: List[CompletedJob], output_dir: str)
     os.makedirs(output_dir, exist_ok=True)
     job_folders = []
     print("Downloading completed jobs...")
-    for job in tqdm(completed_jobs):
+    for job in completed_jobs:
         zip_file = os.path.join(output_dir, job.job_id + ".zip")
         if job.result_url is None:
             continue
