@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
+from urllib.parse import urljoin
 
 from serde import serde, serialize, deserialize, field
 from serde.json import from_json, to_json
@@ -11,13 +12,21 @@ import requests
 from infinity_api.data_structures import SuccessfulJobRequest, FailedJobRequest, CompletedJob
 
 
+def _auth_header_dict(token: str) -> Dict[str, str]:
+    return {"Authorization": f"Token {token}"}
+
+
+def _json_content_header_dict() -> Dict[str, str]:
+    return {"Content-Type": "application/json"}
+
+
 @serialize
 @deserialize
 @dataclass(frozen=True)
 class Batch:
     uid: str
     timestamp: str
-    batch_folder_suffix: Optional[str]
+    folder_suffix: Optional[str]
     jobs: List[SuccessfulJobRequest]
     failed_requests: List[FailedJobRequest]
     generator: str
@@ -29,10 +38,22 @@ class Batch:
 
     @property
     def batch_dir(self) -> str:
-        if self.batch_folder_suffix:
-            return f"{self.timestamp}_{self.batch_folder_suffix[0:30]}"
+        if self.folder_suffix:
+            return f"{self.timestamp}_{self.folder_suffix[0:30]}"
         else:
             return f"{self.timestamp}"
+
+    @property
+    def batch_query_url(self) -> str:
+        return urljoin(self.server, self.batch_query_endpoint)
+
+    @property
+    def jobs_query_url(self) -> str:
+        return urljoin(self.server, self.jobs_query_endpoint)
+
+    @property
+    def authentication_header(self) -> Dict[str, str]:
+        return _auth_header_dict(self.token)
 
     @property
     def job_ids(self) -> List[str]:
@@ -64,8 +85,8 @@ class Batch:
     def get_completed_jobs(self) -> List[CompletedJob]:
         """Returns list of completed jobs in the batch."""
         r = requests.get(
-            f"{self.server}{self.batch_query_endpoint}",
-            headers={"Authorization": f"Token {self.token}"},
+            self.batch_query_url,
+            headers=self.authentication_header,
         )
         completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
 
@@ -120,8 +141,8 @@ class Batch:
                 end="\r",
             )
             r = requests.get(
-                f"{self.server}{self.batch_query_endpoint}",
-                headers={"Authorization": f"Token {self.token}"},
+                self.batch_query_url,
+                headers=self.authentication_header,
             )
             completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
             num_completed_jobs = len(completed_job_payloads)
@@ -176,17 +197,16 @@ def submit_batch_to_api(
 
     # Submit jobs until first success to get batch ID from the backend.
     jidx = 0
+    run_url = urljoin(server, run_endpoint)
+    run_header = {**_auth_header_dict(token), **_json_content_header_dict()}
     for params in job_params:
         r = requests.post(
-            f"{server}{run_endpoint}",
+            run_url,
             json={
                 "name": generator,
                 "param_values": params,
             },
-            headers={
-                "Authorization": f"Token {token}",
-                "Content-Type": "application/json",
-            },
+            headers=run_header,
         )
         jidx += 1
         if r.status_code == 201:
@@ -204,16 +224,13 @@ def submit_batch_to_api(
     # Submit the rest of the jobs with the obtained unique batch ID.
     for params in job_params[jidx:]:
         r = requests.post(
-            f"{server}{run_endpoint}",
+            run_url,
             json={
                 "name": generator,
                 "param_values": params,
                 "batch_id": batch_uid,
             },
-            headers={
-                "Authorization": f"Token {token}",
-                "Content-Type": "application/json",
-            },
+            headers=run_header,
         )
         if r.status_code == 201:
             job_id = r.json()["id"]
@@ -222,12 +239,13 @@ def submit_batch_to_api(
             failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
         time.sleep(request_delay)
 
+    query_endpoint = query_endpoint if query_endpoint.endswith("/") else query_endpoint + "/"
     batch_query_endpoint = query_endpoint + f"?batch_id={batch_uid}"
 
     batch = Batch(
         uid=batch_uid,
         timestamp=batch_timestamp,
-        batch_folder_suffix=batch_folder_suffix,
+        folder_suffix=batch_folder_suffix,
         jobs=successful_requests,
         failed_requests=failed_requests,
         generator=generator,
