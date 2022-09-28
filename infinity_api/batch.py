@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Union
 from datetime import datetime
 import time
 from dataclasses import dataclass, replace
@@ -67,13 +67,13 @@ class Batch:
         return to_json(self, indent=4)
 
     @classmethod
-    def from_batch_file(cls, json_file_path: str, token: str) -> "Batch":
+    def from_batch_file(cls, json_file_path: Union[str, Path], token: str) -> "Batch":
         with open(json_file_path, "r") as f:
             json_str = f.read()
         return cls.from_json(json_str=json_str, token=token)
 
     @classmethod
-    def from_batch_folder(cls, batch_folder_path: str, token: str) -> "Batch":
+    def from_batch_folder(cls, batch_folder_path: Union[str, Path], token: str) -> "Batch":
         json_file_path = Path(batch_folder_path) / "batch.json"
         return cls.from_batch_file(json_file_path=json_file_path, token=token)
 
@@ -177,7 +177,7 @@ def submit_batch_to_api(
     job_params: List[Dict],
     write_submission_status_to_file: bool = True,
     request_delay: float = 0.05,
-) -> Tuple[Batch, Optional[str]]:
+) -> Tuple[Batch, Optional[Path]]:
     """Submits a batch of jobs to the API.
 
     Args:
