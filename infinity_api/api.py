@@ -1,39 +1,114 @@
-from urllib.parse import urlencode
+from functools import reduce
+from operator import ior
+from urllib.parse import urlencode, urljoin
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any, Optional, Dict, Tuple, Set
 
 import requests
+
+from infinity_api.data_structures import HeaderKind
 
 
 DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 
 
-def get_all_preview_data():
-    pass
+def _ensure_trailing_slash(url: str) -> str:
+    url if url.endswith("/") else url + "/"
 
 
-def get_single_preview_data():
-    pass
+def build_get_request(
+    token: str, server: str, endpoint: str, headers: Set[HeaderKind], query_parameters: Optional[Dict[str, str]] = None
+) -> Tuple[str, Dict[str, str]]:
+    url = urljoin(server, endpoint)
+    url = _ensure_trailing_slash(url)
+    if query_parameters:
+        url += "?" + urlencode(query_parameters)
+        url = _ensure_trailing_slash(url)
+    headers = reduce(ior, [h.to_header_dict(token) for h in headers], dict())
+
+    return url, headers
 
 
-def get_all_job_data():
-    pass
+def get_all_preview_data(token: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint="api/job_previews/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
 
 
-def get_single_job_data():
-    pass
+def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/job_previews/{preview_id}/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
 
 
-def get_all_generator_data():
-    pass
+def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/job_runs/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
 
 
-def get_single_generator_data():
-    pass
+def get_single_standard_job_data(token: str, standard_job_id: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/job_runs/{standard_job_id}/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
 
 
-def get_openapi_schema():
-    pass
+def get_all_generator_data(token: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/jobs/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
+
+
+def get_single_generator_data(token: str, generator_name: str, server: str = DEFAULT_SERVER):
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/jobs/{generator_name}/",
+        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+    )
+    return requests.get(url=url, headers=headers)
+
+
+def get_openapi_schema(token: str, format: str = "yaml", language: str = "en", server: str = DEFAULT_SERVER):
+    headers = {HeaderKind.AUTH}
+    query_parameters = dict()
+    if format == "yaml":
+        headers.add(HeaderKind.ACCEPT_OPENAPI_YAML)
+        query_parameters["format"] = format
+    elif format == "json":
+        headers.add(HeaderKind.ACCEPT_OPENAPI_JSON)
+        query_parameters["format"] = format
+    else:
+        raise ValueError(f"Unsupported OpenAPI schema format: `{format}` must be `yaml` or `json`")
+    query_parameters["lang"] = language
+    url, headers = build_get_request(
+        token=token,
+        server=server,
+        endpoint=f"api/schema/",
+        headers=headers,
+        query_parameters=query_parameters,
+    )
+    return requests.get(url=url, headers=headers)
 
 
 def get_usage_datetime_range(
