@@ -27,6 +27,11 @@ class HeaderKind(Enum):
             raise ValueError(f"Unsupported header kind {self}")
 
 
+class JobType(Enum):
+    PREVIEW = auto()
+    STANDARD = auto()
+
+
 @serde
 @dataclass(frozen=True)
 class FailedJobRequest:
