@@ -18,14 +18,24 @@ def _ensure_trailing_slash(url: str) -> str:
 
 
 def build_request(
-    token: str, server: str, endpoint: str, headers: Set[HeaderKind], query_parameters: Optional[Dict[str, str]] = None
+    token: str, server: str, endpoint: str, headers: Optional[Set[HeaderKind]] = None, query_parameters: Optional[Dict[str, str]] = None
 ) -> Tuple[str, Dict[str, str]]:
+    if token == "":
+        raise ValueError("`token` cannot be an empty string")
+    if server == "":
+        raise ValueError("`server` cannot be an empty string")
+    if endpoint == "":
+        raise ValueError("`endpoint` cannot be an empty string")
+
     url = urljoin(server, endpoint)
     url = _ensure_trailing_slash(url)
-    if query_parameters:
+    if query_parameters is not None:
         url += "?" + urlencode(query_parameters)
         url = _ensure_trailing_slash(url)
-    headers_dict: Dict[str, str] = reduce(ior, [h.to_header_dict(token) for h in headers], dict())
+    if headers is not None:
+        headers_dict: Dict[str, str] = reduce(ior, [h.to_header_dict(token) for h in headers], dict())
+    else:
+        headers_dict = dict()
 
     return url, headers_dict
 
