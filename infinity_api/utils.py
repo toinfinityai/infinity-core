@@ -5,10 +5,11 @@ from pathlib import Path
 
 import requests
 
-from infinity_api.data_structures import CompletedJob
+import infinity_api.api as api
+from infinity_api.data_structures import CompletedJob, JobType
 
 
-def download_completed_jobs(completed_jobs: List[CompletedJob], output_dir: str) -> List[str]:
+def download_completed_jobs(completed_jobs: List[CompletedJob], output_dir: str) -> List[Path]:
     """Downloads completed jobs to output directory.
 
     Returns:
@@ -42,15 +43,19 @@ def filter_for_valid_ids(completed_jobs: List[CompletedJob]) -> List[str]:
 
 
 def fetch_params_by_id(
-    server: str,
-    endpoint: str,
     token: str,
+    job_type: JobType,
     job_id: str,
+    server: str = api.DEFAULT_SERVER,
 ) -> Dict:
     """Returns parameters corresponding to specific job id."""
 
-    r = requests.get(
-        f"{server}{endpoint}{job_id}/",
-        headers={"Authorization": f"Token {token}"},
-    )
+    if job_type == JobType.PREVIEW:
+        r = api.get_single_preview_data(token=token, preview_id=job_id, server=server)
+    elif job_type == JobType.STANDARD:
+        r = api.get_single_standard_job_data(token=token, standard_job_id=job_id, server=server)
+    else:
+        raise ValueError(f"Unsupported job type `{job_type}` for fetching job parameters")
+
+    r.raise_for_status()
     return r.json()["param_values"]
