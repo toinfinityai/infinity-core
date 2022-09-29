@@ -13,7 +13,7 @@ DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 
 
 def _ensure_trailing_slash(url: str) -> str:
-    url if url.endswith("/") else url + "/"
+    return url if url.endswith("/") else url + "/"
 
 
 def build_get_request(
@@ -34,8 +34,10 @@ def get_all_preview_data(token: str, server: str = DEFAULT_SERVER):
         token=token,
         server=server,
         endpoint="api/job_previews/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
+    print(url)
+    print(headers)
     return requests.get(url=url, headers=headers)
 
 
@@ -44,7 +46,7 @@ def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_S
         token=token,
         server=server,
         endpoint=f"api/job_previews/{preview_id}/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
 
@@ -54,7 +56,7 @@ def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER):
         token=token,
         server=server,
         endpoint=f"api/job_runs/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
 
@@ -64,7 +66,7 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
         token=token,
         server=server,
         endpoint=f"api/job_runs/{standard_job_id}/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
 
@@ -74,7 +76,7 @@ def get_all_generator_data(token: str, server: str = DEFAULT_SERVER):
         token=token,
         server=server,
         endpoint=f"api/jobs/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
 
@@ -84,7 +86,7 @@ def get_single_generator_data(token: str, generator_name: str, server: str = DEF
         token=token,
         server=server,
         endpoint=f"api/jobs/{generator_name}/",
-        headers=set(HeaderKind.AUTH, HeaderKind.ACCEPT_JSON),
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
 
