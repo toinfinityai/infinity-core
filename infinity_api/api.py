@@ -1,3 +1,12 @@
+""" Infinity AI synthetic data REST API wrapper.
+
+This module provides lightweight Python wrapping of the Infinity AI API for synthetic data
+generation related functionality. Use this module to directly interact with the Infinity API or
+to build higher level abstractions for interfacing with the Infinity API. For example, the `batch`
+module provides a higher level abstraction for batches of synthetic data and uses this module to
+interact directly with the REST API.
+"""
+
 from functools import reduce
 from operator import ior
 from urllib.parse import urlencode, urljoin
@@ -18,8 +27,27 @@ def _ensure_trailing_slash(url: str) -> str:
 
 
 def build_request(
-    token: str, server: str, endpoint: str, headers: Optional[Set[HeaderKind]] = None, query_parameters: Optional[Dict[str, str]] = None
+    token: str,
+    server: str,
+    endpoint: str,
+    headers: Optional[Set[HeaderKind]] = None,
+    query_parameters: Optional[Dict[str, str]] = None,
 ) -> Tuple[str, Dict[str, str]]:
+    """Builds HTTP requests.
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+        endpoint: Target endpoint.
+        headers: Optional set of request header types.
+        query_parameters: Optional dictionary of query parameters.
+
+    Returns:
+        A tuple containing the target URL and a dictionary of headers.
+
+    Raises:
+        ValueError: `token`, `server`, or `endpoint` strings are empty.
+    """
     if token == "":
         raise ValueError("`token` cannot be an empty string")
     if server == "":
@@ -41,21 +69,63 @@ def build_request(
 
 
 def unwrap_raw_bytes_payload(response: Response) -> bytes:
+    """Unwrap raw byte contents from provided HTTP request response.
+
+    Args:
+        response: HTTP request response.
+
+    Returns:
+        Raw byte payload returned from the request.
+
+    Raises:
+        HTTPError: When `response` is associated with an error status code.
+    """
     response.raise_for_status()
     return response.content
 
 
 def unwrap_json_payload(response: Response) -> Dict[str, Any]:
+    """Unwrap json payload from provided HTTP request response.
+
+    Args:
+        response: HTTP request response.
+
+    Returns:
+        Decoded JSON payload.
+
+    Raises:
+        HTTPError: When `response` is associated with an error status code.
+    """
     response.raise_for_status()
     return response.json()
 
 
 def unwrap_text_payload(response: Response) -> str:
+    """Unwrap contents from provided HTTP request response as unicode.
+
+    Args:
+        response: HTTP request response.
+
+    Returns:
+        Decoded JSON payload.
+
+    Raises:
+        HTTPError: When `response` is associated with an error status code.
+    """
     response.raise_for_status()
     return response.text
 
 
 def get_all_preview_data(token: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for all previews associated with the given token.
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -66,6 +136,16 @@ def get_all_preview_data(token: str, server: str = DEFAULT_SERVER) -> Response:
 
 
 def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for a given preview associated with the given token.
+
+    Args:
+        token: User authentication token.
+        preview_id: Unique ID associated with a previously run preview.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -76,6 +156,16 @@ def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_S
 
 
 def get_batch_preview_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for a given batch of previews associated with the given token.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously run batch of previews.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
     query_parameters = {"batch_id": batch_id}
     url, headers = build_request(
@@ -89,6 +179,15 @@ def get_batch_preview_data(token: str, batch_id: str, server: str = DEFAULT_SERV
 
 
 def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for all standard jobs associated with the given token.
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -99,6 +198,16 @@ def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER) -> Respo
 
 
 def get_single_standard_job_data(token: str, standard_job_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for a given standard job associated with the given token.
+
+    Args:
+        token: User authentication token.
+        standard_job_id: Unique ID associated with a previously run job.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -109,6 +218,16 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
 
 
 def get_batch_standard_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data for a given batch of standard jobs associated with the given token.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously run batch of jobs.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
     query_parameters = {"batch_id": batch_id}
     url, headers = build_request(
@@ -122,6 +241,15 @@ def get_batch_standard_job_data(token: str, batch_id: str, server: str = DEFAULT
 
 
 def get_all_generator_data(token: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data on all of the generators associated with the given token.
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -132,6 +260,16 @@ def get_all_generator_data(token: str, server: str = DEFAULT_SERVER) -> Response
 
 
 def get_single_generator_data(token: str, generator_name: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get data on a given generator associated with the given token.
+
+    Args:
+        token: User authentication token.
+        generator_name: Unique name of the target generator.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -144,6 +282,17 @@ def get_single_generator_data(token: str, generator_name: str, server: str = DEF
 def get_openapi_schema(
     token: str, format: str = "yaml", language: str = "en", server: str = DEFAULT_SERVER
 ) -> Response:
+    """Get OpenAPI schema information for the Infinity REST API.
+
+    Args:
+        token: User authentication token.
+        format: Output format; must be one of {'yaml', 'json'}.
+        language: String specifying the target language.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     headers_set = {HeaderKind.AUTH}
     query_parameters = dict()
     if format == "yaml":
@@ -171,6 +320,17 @@ def get_usage_datetime_range(
     end_time: Optional[datetime] = None,
     server: str = DEFAULT_SERVER,
 ) -> Response:
+    """Get usage stats associated with the given token over some time range.
+
+    Args:
+        token: User authentication token.
+        start_time: Optional start time for query.
+        end_time: Optional end time for query.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     if end_time is not None and start_time is not None:
         if end_time < start_time:
             raise ValueError(f"End time ({end_time}) before start time ({start_time}) for usage query")
@@ -198,12 +358,32 @@ def get_usage_last_n_days(
     n_days: int,
     server: str = DEFAULT_SERVER,
 ) -> Response:
+    """Get usage stats associated with the given token for the last N days.
+
+    Args:
+        token: User authentication token.
+        n_days: Number of days into the past to query usage stats for.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     end_time = datetime.now().astimezone()
     start_time = end_time - timedelta(days=n_days)
     return get_usage_datetime_range(token=token, server=server, start_time=start_time, end_time=end_time)
 
 
 def post_preview(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
+    """Post a single preview request to the Infinity API.
+
+    Args:
+        token: User authentication token.
+        json_data: Dictionary containing the preview job data.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
@@ -214,6 +394,16 @@ def post_preview(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SE
 
 
 def post_standard_job(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
+    """Post a single standard job request to the Infinity API.
+
+    Args:
+        token: User authentication token.
+        json_data: Dictionary containing the job data.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
     url, headers = build_request(
         token=token,
         server=server,
