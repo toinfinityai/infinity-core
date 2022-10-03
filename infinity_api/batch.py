@@ -10,7 +10,6 @@ from datetime import datetime
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
-from urllib.parse import urljoin
 
 from serde import serialize, deserialize, field
 from serde.json import from_json, to_json
