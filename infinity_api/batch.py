@@ -1,3 +1,10 @@
+""" Infinity AI synthetic data batch module.
+
+This module provides data structures and associated functionality to abstract over the concept of
+batch submission/generation for Infnity synthetic data. Use this module's abstractions to generate,
+track, and manipulate batches of synthetic data.
+"""
+
 from typing import Dict, Optional, List, Tuple, Union
 from datetime import datetime
 import time
@@ -17,6 +24,22 @@ import infinity_api.api as api
 @deserialize
 @dataclass(frozen=True)
 class Batch:
+    """An encapsulation of a batch of synthetic data generated from the Infinity API.
+
+    Attributes:
+        uid (str): Unique batch ID.
+        timestamp (str): Timestamp associated with *local* batch creation.
+        folder_suffix (str, optional) Descriptive suffix for batch folder stored on disk.
+        jobs (:obj:`list` of :obj:`SuccessfulJobRequest`) Jobs submitted to the API successfully.
+        failed_requests (:obj:`list` of :obj:`FailedJobRequest`) Job requests that failed at API
+            submission.
+        generator (str): Name of the generator associated with the batch.
+        server (str): URL of the target API server.
+        job_type (:obj:`JobType`) Type of job in the batch.
+        output_dir (str): Target output directory as a string.
+        token: (str): API authentication token.
+    """
+
     uid: str
     timestamp: str
     folder_suffix: Optional[str]
@@ -30,6 +53,7 @@ class Batch:
 
     @property
     def batch_dir(self) -> str:
+        """str: Fully constructed batch output directory."""
         if self.folder_suffix:
             return f"{self.timestamp}_{self.folder_suffix[0:30]}"
         else:
@@ -37,32 +61,76 @@ class Batch:
 
     @property
     def job_ids(self) -> List[str]:
+        """:obj:`list` of :obj:`str`: List of job IDs for successfully submitted job requests."""
         return [j.job_id for j in self.jobs]
 
     @property
     def num_successfully_submitted_jobs(self) -> int:
+        """`int` Number of successfully submitted job requests."""
         return len(self.job_ids)
 
     def to_json(self) -> str:
+        """Serialize the batch data structure to a JSON string.
+
+        Returns:
+            JSON string containing serialized batch data.
+        """
         return to_json(self, indent=4)
 
     @classmethod
     def from_batch_file(cls, json_file_path: Union[str, Path], token: str) -> "Batch":
+        """Deserialize a JSON batch file into a :obj:`Batch`.
+
+        Args:
+            json_file_path: Path to a JSON file storing a previously constructed batch's
+                information.
+            token: API authentication token associated with the batch.
+
+        Returns:
+            The deserialized :obj:`Batch`.
+        """
         with open(json_file_path, "r") as f:
             json_str = f.read()
         return cls.from_json(json_str=json_str, token=token)
 
     @classmethod
     def from_batch_folder(cls, batch_folder_path: Union[str, Path], token: str) -> "Batch":
+        """Deserialize a JSON batch file from a given folder path into a :obj:`Batch`.
+
+        Args:
+            batch_folder_path: Path to a folder containing a serialized `batch.json` JSON file
+                storing a previously constructed batch's information.
+            token: API authentication token associated with the batch.
+
+        Returns:
+            The deserialized :obj:`Batch`.
+        """
         json_file_path = Path(batch_folder_path) / "batch.json"
         return cls.from_batch_file(json_file_path=json_file_path, token=token)
 
     @classmethod
     def from_json(cls, json_str: str, token: str) -> "Batch":
+        """Deserialize a JSON string into a :obj:`Batch`.
+
+        Args:
+            json_str: JSON string containing a previously serialized batch's information.
+            token: API authentication token associated with the batch.
+
+        Returns:
+            The deserialized :obj:`Batch`.
+        """
         deserialized_batch = from_json(cls, json_str)
         return replace(deserialized_batch, token=token)
 
     def get_batch_data(self) -> requests.models.Response:
+        """Return data from the API for each job in the batch.
+
+        Returns:
+            :obj:`requests.models.Response` from querying the API.
+
+        Raises:
+            ValueError: If the :obj:`JobType` associated with the batch is unsupported by the API.
+        """
         if self.job_type == JobType.PREVIEW:
             return api.get_batch_preview_data(token=self.token, batch_id=self.uid, server=self.server)
         elif self.job_type == JobType.STANDARD:
@@ -71,7 +139,11 @@ class Batch:
             raise ValueError(f"Unsupported job type `{self.job_type}` for querying batch data")
 
     def get_completed_jobs(self) -> List[CompletedJob]:
-        """Returns list of completed jobs in the batch."""
+        """Returns a list of completed batch jobs.
+
+        Returns:
+            :obj:`list` of :obj:`CompletedJob` A list of currently completed batch jobs.
+        """
         r = self.get_batch_data()
         r.raise_for_status()
         completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
@@ -92,7 +164,14 @@ class Batch:
     def get_completed_jobs_valid_and_invalid(
         self,
     ) -> Tuple[List[CompletedJob], List[CompletedJob]]:
-        """Returns tuple of valid and invalid `CompletedJob` objects."""
+        """Returns completed batch split by valid status.
+
+        Returns:
+            A tuple containing a list of valid completed jobs and a list of invalid completed jobs.
+                A job may complete with an error or otherwise invalid state such that, for example,
+                a final output was not rendered. A "valid" job here means the final output is
+                available.
+        """
         completed_valid_jobs = []
         completed_invalid_jobs = []
         completed_jobs = self.get_completed_jobs()
@@ -103,16 +182,20 @@ class Batch:
                 completed_invalid_jobs.append(cj)
         return completed_valid_jobs, completed_invalid_jobs
 
-    def await_jobs(self, timeout: int = 3 * 60 * 60, polling_interval: float = 10) -> List[CompletedJob]:
-        """Waits for all jobs in batch to complete.
+    def await_jobs(self, timeout: int = 48 * 60 * 60, polling_interval: float = 10) -> List[CompletedJob]:
+        """Serially poll and wait for all jobs in the batch to complete (blocking).
+
+        Note: This function will hang forever if a backend error leads to a hung job
+        (that never completes).
 
         Args:
             timeout: Maximum allowable time to wait for jobs in batch to complete (in seconds).
+                Defaults to 48 hours.
             polling_interval: Time interval to sleep (in seconds) between consecutive iterations
-                of polling.
+                of polling. Defaults to 10 seconds.
 
         Returns:
-            List of all `CompletedJobs` in batch.
+            :obj:`list` of all :obj:`CompletedJobs` in batch.
         """
         num_jobs = len(self.jobs)
         if num_jobs == 0:
@@ -158,16 +241,30 @@ def submit_batch_to_api(
     job_params: List[Dict],
     batch_folder_suffix: Optional[str],
     output_dir: str,
-    write_submission_status_to_file: bool = True,
+    write_to_file: bool = True,
     request_delay: float = 0.05,
 ) -> Tuple[Batch, Optional[Path]]:
-    """Submits a batch of jobs to the API.
+    """Submits a batch of jobs to the Infinity API.
 
     Args:
-        request_delay: Delay between requests, s
+        token: API authentication token associated with the batch.
+        server: URL of the target API server.
+        generator: Name of the generator associated with the batch.
+        job_type: Type of job requested in the batch.
+        job_params: :obj:`list` of :obj:`dict`s containing input parameters for each job of the
+            batch.
+        batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
+        output_dir: Target output directory of the batch, as a string.
+        write_to_file: Flag to serialize batch information to disk as a JSON file.
+        request_delay: Delay in seconds between job request submissions for each job in the batch.
+            Defaults to 50 milliseconds.
 
     Returns:
-        Tuple of corresponding `Batch` object and a path to its metadata on disk.
+        Tuple of the created :obj:`Batch` instance and a path to its metadata on disk.
+
+    Raises:
+        ValueError: If an unsupported job type is requested.
+        ValueError: If all batch jobs fail at submission.
     """
 
     batch_time = datetime.now()
@@ -231,7 +328,7 @@ def submit_batch_to_api(
         output_dir=output_dir,
     )
 
-    if write_submission_status_to_file:
+    if write_to_file:
         batch_path = Path(output_dir) / f"{batch.batch_dir}"
         batch_path.mkdir(exist_ok=False)
         serialized_batch_file = batch_path / "batch.json"
