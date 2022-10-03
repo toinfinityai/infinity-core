@@ -11,7 +11,7 @@ from functools import reduce
 from operator import ior
 from urllib.parse import urlencode, urljoin
 from datetime import datetime, timedelta
-from typing import Any, Optional, Dict, Tuple, Set, List, Union
+from typing import Any, Optional, Dict, Tuple, Set
 
 import requests
 from requests.models import Response
