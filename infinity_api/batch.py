@@ -1,7 +1,7 @@
 """ Infinity AI synthetic data batch module.
 
 This module provides data structures and associated functionality to abstract over the concept of
-batch submission/generation for Infnity synthetic data. Use this module's abstractions to generate,
+batch submission/generation for Infinity synthetic data. Use this module's abstractions to generate,
 track, and manipulate batches of synthetic data.
 """
 
