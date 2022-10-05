@@ -5,7 +5,7 @@ batch submission/generation for Infinity synthetic data. Use this module's abstr
 track, and manipulate batches of synthetic data.
 """
 
-from typing import Dict, Optional, List, Tuple, Union
+from typing import Any, Dict, Optional, List, Tuple, Union
 from datetime import datetime
 import time
 from dataclasses import dataclass, replace
@@ -131,7 +131,7 @@ class Batch:
             ValueError: If the :obj:`JobType` associated with the batch is unsupported by the API.
         """
         if self.job_type == JobType.PREVIEW:
-            return api.get_batch_preview_data(token=self.token, batch_id=self.uid, server=self.server)
+            return api.get_batch_preview_job_data(token=self.token, batch_id=self.uid, server=self.server)
         elif self.job_type == JobType.STANDARD:
             return api.get_batch_standard_job_data(token=self.token, batch_id=self.uid, server=self.server)
         else:
@@ -237,7 +237,7 @@ def submit_batch_to_api(
     server: str,
     generator: str,
     job_type: JobType,
-    job_params: List[Dict],
+    job_params: List[Dict[str, Any]],
     batch_folder_suffix: Optional[str],
     output_dir: str,
     write_to_file: bool = True,

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Any, List, Dict
 import urllib
 import zipfile
 from pathlib import Path
@@ -45,11 +45,11 @@ def fetch_params_by_id(
     job_type: JobType,
     job_id: str,
     server: str = api.DEFAULT_SERVER,
-) -> Dict:
+) -> Any:
     """Returns parameters corresponding to specific job id."""
 
     if job_type == JobType.PREVIEW:
-        r = api.get_single_preview_data(token=token, preview_id=job_id, server=server)
+        r = api.get_single_preview_job_data(token=token, preview_id=job_id, server=server)
     elif job_type == JobType.STANDARD:
         r = api.get_single_standard_job_data(token=token, standard_job_id=job_id, server=server)
     else:

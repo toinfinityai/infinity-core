@@ -88,7 +88,7 @@ def unwrap_raw_bytes_payload(response: Response) -> bytes:
     return response.content
 
 
-def unwrap_json_payload(response: Response) -> Dict[str, Any]:
+def unwrap_json_payload(response: Response) -> Any:
     """Unwrap json payload from provided HTTP request response.
 
     Args:

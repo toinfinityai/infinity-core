@@ -4,7 +4,7 @@ This module contains common or important data structures used in other `infinity
 """
 
 from enum import Enum, auto
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from dataclasses import dataclass
 
 from serde import serde
@@ -57,7 +57,7 @@ class FailedJobRequest:
     """
 
     status_code: int
-    params: Dict
+    params: Dict[str, Any]
 
 
 @serde
@@ -71,7 +71,7 @@ class SuccessfulJobRequest:
     """
 
     job_id: str
-    params: Dict
+    params: Dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -85,5 +85,5 @@ class CompletedJob:
     """
 
     job_id: str
-    params: Dict
+    params: Dict[str, Any]
     result_url: Optional[str] = None
