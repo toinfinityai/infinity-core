@@ -1,6 +1,5 @@
-<p align="left">
-  <img src="docs/source/infinity_ai_logo.png" width="30%">
-</p>
+.. image:: docs/source/infinity_ai_logo.png
+    :width: 300
 
 Infinity API
 ############
