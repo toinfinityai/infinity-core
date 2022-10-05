@@ -35,7 +35,7 @@ class TestBuildRequest:
         query_parameters = {"var1": 1, "var2": 2}
         url, _ = api.build_request(token=token, server=server, endpoint=endpoint, query_parameters=query_parameters)
 
-        assert url == server + "/ep/" + "?" + "var1=1&var2=2/"
+        assert url == server + "/ep/" + "?" + "var1=1&var2=2"
 
     def test_combined_headers(self):
         token = "123"

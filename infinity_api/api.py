@@ -26,6 +26,10 @@ def _ensure_trailing_slash(url: str) -> str:
     return url if url.endswith("/") else url + "/"
 
 
+def _ensure_no_trailing_slash(url: str) -> str:
+    return url[:-1] if url.endswith("/") else url
+
+
 def build_request(
     token: str,
     server: str,
@@ -59,7 +63,7 @@ def build_request(
     url = _ensure_trailing_slash(url)
     if query_parameters is not None:
         url += "?" + urlencode(query_parameters)
-        url = _ensure_trailing_slash(url)
+        url = _ensure_no_trailing_slash(url)
     if headers is not None:
         headers_dict: Dict[str, str] = reduce(ior, [h.to_header_dict(token) for h in headers], dict())
     else:
@@ -116,7 +120,7 @@ def unwrap_text_payload(response: Response) -> str:
     return response.text
 
 
-def get_all_preview_data(token: str, server: str = DEFAULT_SERVER) -> Response:
+def get_all_preview_job_data(token: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for all previews associated with the given token.
 
     Args:
@@ -135,7 +139,7 @@ def get_all_preview_data(token: str, server: str = DEFAULT_SERVER) -> Response:
     return requests.get(url=url, headers=headers)
 
 
-def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_SERVER) -> Response:
+def get_single_preview_job_data(token: str, preview_id: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for a given preview associated with the given token.
 
     Args:
@@ -155,7 +159,7 @@ def get_single_preview_data(token: str, preview_id: str, server: str = DEFAULT_S
     return requests.get(url=url, headers=headers)
 
 
-def get_batch_preview_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
+def get_batch_preview_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for a given batch of previews associated with the given token.
 
     Args:
