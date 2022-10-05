@@ -43,10 +43,10 @@ jobs:
       #  pip install -r pyproject.toml
     - name: Format with black
       run: |
-        black --line-length 120 --diff --check $(git ls-files '*.py')
+        poetry run black --line-length 120 --diff --check $(git ls-files '*.py')
     - name: Type checking with mypy
       run: |
-        mypy --strict $(git ls-files '*.py')
+        poetry run mypy --strict $(git ls-files '*.py')
     #- name: Lint with flake8
     #  run: |
     #    # stop the build if there are Python syntax errors or undefined names
@@ -55,4 +55,4 @@ jobs:
     #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics --exclude ./docs
     - name: Run unit tests with pytest
       run: |
-        pytest -m "not integration"
+        poetry run pytest -m "not integration"
