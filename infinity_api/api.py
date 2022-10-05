@@ -7,8 +7,6 @@ module provides a higher level abstraction for batches of synthetic data and use
 interact directly with the REST API.
 """
 
-from functools import reduce
-from operator import ior
 from urllib.parse import urlencode, urljoin
 from datetime import datetime, timedelta
 from typing import Any, Optional, Dict, Tuple, Set
@@ -64,10 +62,10 @@ def build_request(
     if query_parameters is not None:
         url += "?" + urlencode(query_parameters)
         url = _ensure_no_trailing_slash(url)
+    headers_dict: Dict[str, str] = dict()
     if headers is not None:
-        headers_dict: Dict[str, str] = reduce(ior, [h.to_header_dict(token) for h in headers], dict())
-    else:
-        headers_dict = dict()
+        for h in headers:
+            headers_dict = {**headers_dict, **h.to_header_dict(token)}
 
     return url, headers_dict
 
