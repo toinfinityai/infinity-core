@@ -1,5 +1,6 @@
 .. image:: docs/source/infinity_ai_logo.png
-    :width: 300
+    :width: 200
+    :alt: Infinity AI, Inc.
 
 Infinity API
 ############
