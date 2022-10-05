@@ -301,7 +301,7 @@ def submit_batch_to_api(
         except Exception as e:
             raise ValueError(f"All batch jobs failed in submission; last error: {e}")
         else:
-            raise ValueError(f"All batch jobs failed in submission")
+            raise ValueError("All batch jobs failed in submission")
 
     # Submit the rest of the jobs with the obtained unique batch ID.
     for params in job_params[jidx:]:

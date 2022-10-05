@@ -3,8 +3,6 @@ import urllib
 import zipfile
 from pathlib import Path
 
-import requests
-
 import infinity_api.api as api
 from infinity_api.data_structures import CompletedJob, JobType
 

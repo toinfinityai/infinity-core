@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import infinity_api.api as api
-import infinity_api.batch as batch
 
 
 def _construct_config_file(filename: str) -> Path:
