@@ -1,11 +1,18 @@
+<p align="left">
+  <img src="docs/source/infinity_ai_logo.png" width="30%">
+</p>
+
 Infinity API
 ############
+
+.. image:: https://github.com/toinfinityai/infinity-api-dev/actions/workflows/python-package.yml/badge.svg
+    :target: https://github.com/toinfinityai/infinity-api-dev/actions/workflows/python-package.yml
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
-.. image:: https://github.com/toinfinityai/infinity-api-dev/actions/workflows/python-package.yml/badge.svg
-    :target: https://github.com/toinfinityai/infinity-api-dev/actions/workflows/python-package.yml
+.. image:: http://www.mypy-lang.org/static/mypy_badge.svg
+    :target: http://mypy-lang.org
 
 The **infinity_api** package provides tools to interact with the `Infinity API <https://infinity.ai>`_ and generate synthetic data.
 
