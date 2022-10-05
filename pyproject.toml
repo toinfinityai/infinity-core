@@ -3,7 +3,7 @@ authors = ["Daniel Hensley <daniel@toinfinity.ai>"]
 description = "Infinity AI API wrapper"
 name = "infinity-api"
 packages = [{include = "infinity_api"}]
-readme = "README.md"
+readme = "README.rst"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
