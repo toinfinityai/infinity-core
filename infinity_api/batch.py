@@ -250,7 +250,7 @@ def submit_batch_to_api(
         server: URL of the target API server.
         generator: Name of the generator associated with the batch.
         job_type: Type of job requested in the batch.
-        job_params: :obj:`list` of :obj:`dict`s containing input parameters for each job of the
+        job_params: :obj:`list` of :obj:`dict` containing input parameters for each job of the
             batch.
         batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
         output_dir: Target output directory of the batch, as a string.
