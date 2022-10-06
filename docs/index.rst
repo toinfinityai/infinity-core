@@ -8,7 +8,7 @@ Welcome to Infinity API's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Infinity AI
 
    source/modules
 

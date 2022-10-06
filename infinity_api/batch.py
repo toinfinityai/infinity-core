@@ -25,18 +25,17 @@ import infinity_api.api as api
 class Batch:
     """An encapsulation of a batch of synthetic data generated from the Infinity API.
 
-    Attributes:
-        uid (str): Unique batch ID.
-        timestamp (str): Timestamp associated with *local* batch creation.
-        folder_suffix (str, optional) Descriptive suffix for batch folder stored on disk.
-        jobs (:obj:`list` of :obj:`SuccessfulJobRequest`) Jobs submitted to the API successfully.
-        failed_requests (:obj:`list` of :obj:`FailedJobRequest`) Job requests that failed at API
-            submission.
-        generator (str): Name of the generator associated with the batch.
-        server (str): URL of the target API server.
-        job_type (:obj:`JobType`) Type of job in the batch.
-        output_dir (str): Target output directory as a string.
-        token: (str): API authentication token.
+    Args:
+        uid: Unique batch ID.
+        timestamp: Timestamp associated with *local* batch creation.
+        folder_suffix: Descriptive suffix for batch folder stored on disk.
+        jobs: Jobs submitted to the API successfully.
+        failed_requests: Job requests that failed at API submission.
+        generator: Name of the generator associated with the batch.
+        server: URL of the target API server.
+        job_type: Type of job in the batch.
+        output_dir: Target output directory as a string.
+        token: API authentication token.
     """
 
     uid: str
@@ -167,9 +166,9 @@ class Batch:
 
         Returns:
             A tuple containing a list of valid completed jobs and a list of invalid completed jobs.
-                A job may complete with an error or otherwise invalid state such that, for example,
-                a final output was not rendered. A "valid" job here means the final output is
-                available.
+            A job may complete with an error or otherwise invalid state such that, for example,
+            a final output was not rendered. A "valid" job here means the final output is
+            available.
         """
         completed_valid_jobs = []
         completed_invalid_jobs = []
@@ -234,12 +233,12 @@ class Batch:
 
 def submit_batch_to_api(
     token: str,
-    server: str,
     generator: str,
     job_type: JobType,
     job_params: List[Dict[str, Any]],
     batch_folder_suffix: Optional[str],
     output_dir: str,
+    server: str = api.DEFAULT_SERVER,
     write_to_file: bool = True,
     request_delay: float = 0.05,
 ) -> Tuple[Batch, Optional[Path]]:

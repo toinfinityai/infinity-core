@@ -24,6 +24,12 @@ The **infinity_api** package requires Python 3.7 or newer.
 Installation
 ------------
 
+Add to a Python project with Poetry:
+
+.. code-block:: text
+
+    poetry add infinity_api
+
 Install from PyPI:
 
 .. code-block:: text
@@ -36,3 +42,44 @@ Install from the source located on GitHub:
     
     git clone git@github.com:toinfinityai/infinity-api-dev.git
     poetry install
+
+Examples
+--------
+
+.. code-block:: python
+
+    from infinity_api import api
+
+    my_token = "MY_TOKEN" # Your authentication token from Infinity AI.
+
+    # Get parameter information for a specific VisionFit generator.
+    visionfit_info = api.get_single_generator_data(token=token, generator_name="visionfit-v0.3.1")
+    print(visionfit_info)
+
+    # Get your usage from the last 30 days.
+    usage_stats = api.get_usage_last_n_days(token=token, n_days=30)
+    print(usage_stats)
+
+    # Post a request for a single preview using default parameters.
+    json_for_default = {"name": "visionfit", "param_values": {}}
+    r = api.post_preview(token=token, json_data=json_for_default)
+    assert r.ok
+
+    # Post a request for a single standard video job using default parameters.
+    r = api.post_standard_job(token=token, json_data=json_for_default)
+    assert r.ok
+
+    # Submit a batch of two previews and await the results.
+    from infinity_api import batch
+    from infinity_api.data_structures import JobType
+
+    small_batch = batch.submit_batch_to_api(
+        token=token,
+        generator="visionfit",
+        job_type=JobType.PREVIEW,
+        job_params=[json_for_default, json_for_default],
+        batch_folder_suffix="example_batch",
+        output_dir="tmp",
+    )
+    completed_jobs = small_batch.await_jobs()
+    print(completed_jobs)

@@ -1,4 +1,4 @@
-infinity\_api package documentation
+infinity\_api Package Documentation
 ===================================
 
 Submodules
