@@ -46,6 +46,9 @@ Install from the source located on GitHub:
 Examples
 --------
 
+Using the `api` module directly
+*******************************
+
 .. code-block:: python
 
     from infinity_api import api
@@ -68,6 +71,11 @@ Examples
     # Post a request for a single standard video job using default parameters.
     r = api.post_standard_job(token=token, json_data=json_for_default)
     assert r.ok
+
+Using the `batch` module
+************************
+
+.. code-block:: python
 
     # Submit a batch of two previews and await the results.
     from infinity_api import batch
