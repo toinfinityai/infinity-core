@@ -65,7 +65,7 @@ class Batch:
     @property
     def num_successfully_submitted_jobs(self) -> int:
         """`int` Number of successfully submitted job requests."""
-        return len(self.job_ids)
+        return len(self.jobs)
 
     def to_json(self) -> str:
         """Serialize the batch data structure to a JSON string.
@@ -141,21 +141,24 @@ class Batch:
 
         Returns:
             :obj:`list` of :obj:`CompletedJob` A list of currently completed batch jobs.
+
+        Raises:
+            HTTPError: When querying the batch jobs returns an error status code.
         """
         r = self.get_batch_data()
         r.raise_for_status()
+
         completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
 
-        # Construct dict and loop through completed `job_ids` to preserve order of `self.jobs`.
+        # Return results in the original (`self.jobs`) job order.
         completed_job_payloads_dict = {j["id"]: j for j in completed_job_payloads}
         completed_jobs_id_set = set(completed_job_payloads_dict.keys())
-        completed_job_ids = [j.job_id for j in self.jobs if j.job_id in completed_jobs_id_set]
-        completed_job_params_dict = {j.job_id: j.params for j in self.jobs if j.job_id in completed_jobs_id_set}
+        completed_job_info_in_original_order = [(j.job_id, j.params) for j in self.jobs if j.job_id in completed_jobs_id_set]
+
         completed_jobs = []
-        for jid in completed_job_ids:
+        for jid, jparams in completed_job_info_in_original_order:
             job_result_url = completed_job_payloads_dict[jid]["result_url"]
-            params = completed_job_params_dict[jid]
-            completed_jobs.append(CompletedJob(job_id=jid, params=params, result_url=job_result_url))
+            completed_jobs.append(CompletedJob(job_id=jid, params=jparams, result_url=job_result_url))
 
         return completed_jobs
 
@@ -178,6 +181,7 @@ class Batch:
                 completed_valid_jobs.append(cj)
             else:
                 completed_invalid_jobs.append(cj)
+
         return completed_valid_jobs, completed_invalid_jobs
 
     def await_jobs(self, timeout: int = 48 * 60 * 60, polling_interval: float = 10) -> List[CompletedJob]:
@@ -194,6 +198,9 @@ class Batch:
 
         Returns:
             :obj:`list` of all :obj:`CompletedJobs` in batch.
+
+        Raises:
+            HTTPError: When querying the batch jobs returns an error status code.
         """
         num_jobs = len(self.jobs)
         if num_jobs == 0:
@@ -218,15 +225,13 @@ class Batch:
         duration = datetime.now() - start_time
         print(f"Duration for all jobs: {duration.seconds} [s]")
 
-        # Construct dict and loop through `job_ids` to preserve order of `self.jobs`.
-        job_ids = [j.job_id for j in self.jobs]
-        job_params_dict = {j.job_id: j.params for j in self.jobs}
+        # Return results in the original (`self.jobs`) job order.
+        job_info = [(j.job_id, j.params) for j in self.jobs]
         completed_job_payloads_dict = {j["id"]: j for j in completed_job_payloads}
         completed_jobs = []
-        for jid in job_ids:
+        for jid, jparams in job_info:
             job_result_url = completed_job_payloads_dict[jid]["result_url"]
-            params = job_params_dict[jid]
-            completed_jobs.append(CompletedJob(job_id=jid, params=params, result_url=job_result_url))
+            completed_jobs.append(CompletedJob(job_id=jid, params=jparams, result_url=job_result_url))
 
         return completed_jobs
 
