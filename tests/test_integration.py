@@ -131,7 +131,7 @@ class TestApiPostRequestIntegration:
 @pytest.mark.batchpost
 class TestBatchSubmissionIntegration:
     def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
-        ba.submit_batch_to_api(
+        batch, _ = ba.submit_batch_to_api(
             token=token,
             generator=generator_name,
             job_type=JobType.PREVIEW,
@@ -141,8 +141,10 @@ class TestBatchSubmissionIntegration:
             write_to_file=False,
         )
 
+        assert batch.num_successfully_submitted_jobs == 1
+
     def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
-        ba.submit_batch_to_api(
+        batch, _ = ba.submit_batch_to_api(
             token=token,
             generator=generator_name,
             job_type=JobType.STANDARD,
@@ -151,3 +153,5 @@ class TestBatchSubmissionIntegration:
             server=server,
             write_to_file=False,
         )
+
+        assert batch.num_successfully_submitted_jobs == 1
