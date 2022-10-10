@@ -1,8 +1,11 @@
 from pathlib import Path
+from infinity_api.data_structures import JobType
 
 import pytest
 
 import infinity_api.api as api
+import infinity_api.batch as ba
+from infinity_api.data_structures import JobType
 
 
 def _construct_config_file(filename: str) -> Path:
@@ -122,3 +125,29 @@ class TestApiPostRequestIntegration:
         r = api.post_standard_job(token=token, json_data=json_data, server=server)
 
         assert r.ok
+
+
+@pytest.mark.integration
+@pytest.mark.batchpost
+class TestBatchSubmissionIntegration:
+    def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
+        ba.submit_batch_to_api(
+            token=token,
+            generator=generator_name,
+            job_type=JobType.PREVIEW,
+            job_params=[dict()],
+            output_dir="tmp",
+            server=server,
+            write_to_file=False,
+        )
+
+    def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
+        ba.submit_batch_to_api(
+            token=token,
+            generator=generator_name,
+            job_type=JobType.STANDARD,
+            job_params=[dict()],
+            output_dir="tmp",
+            server=server,
+            write_to_file=False,
+        )

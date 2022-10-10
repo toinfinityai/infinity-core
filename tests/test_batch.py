@@ -25,16 +25,16 @@ def batch() -> ba.Batch:
 
 
 class TestBatch:
-    def test_job_ids_property(self, batch) -> None:
+    def test_job_ids_property(self, batch: ba.Batch) -> None:
         assert batch.job_ids == ["1"]
 
-    def test_correct_num_successful_jobs(self, batch) -> None:
+    def test_correct_num_successful_jobs(self, batch: ba.Batch) -> None:
         assert batch.num_successfully_submitted_jobs == 1
 
-    def test_correct_num_failed_jobs(self, batch) -> None:
+    def test_correct_num_failed_jobs(self, batch: ba.Batch) -> None:
         assert batch.num_failed_job_submissions == 1
 
-    def test_serde_inverse(self, batch) -> None:
+    def test_serde_inverse(self, batch: ba.Batch) -> None:
         batch_json_str = batch.to_json()
         reconstituted_batch = ba.Batch.from_json(json_str=batch_json_str, token=batch.token)
         assert reconstituted_batch == batch
