@@ -67,6 +67,11 @@ class Batch:
         """`int` Number of successfully submitted job requests."""
         return len(self.jobs)
 
+    @property
+    def num_failed_job_submissions(self) -> int:
+        """`int` Number of job requests that failed."""
+        return len(self.failed_requests)
+
     def to_json(self) -> str:
         """Serialize the batch data structure to a JSON string.
 
@@ -153,7 +158,9 @@ class Batch:
         # Return results in the original (`self.jobs`) job order.
         completed_job_payloads_dict = {j["id"]: j for j in completed_job_payloads}
         completed_jobs_id_set = set(completed_job_payloads_dict.keys())
-        completed_job_info_in_original_order = [(j.job_id, j.params) for j in self.jobs if j.job_id in completed_jobs_id_set]
+        completed_job_info_in_original_order = [
+            (j.job_id, j.params) for j in self.jobs if j.job_id in completed_jobs_id_set
+        ]
 
         completed_jobs = []
         for jid, jparams in completed_job_info_in_original_order:
@@ -241,8 +248,8 @@ def submit_batch_to_api(
     generator: str,
     job_type: JobType,
     job_params: List[Dict[str, Any]],
-    batch_folder_suffix: Optional[str],
     output_dir: str,
+    batch_folder_suffix: Optional[str] = None,
     server: str = api.DEFAULT_SERVER,
     write_to_file: bool = True,
     request_delay: float = 0.05,
@@ -251,13 +258,13 @@ def submit_batch_to_api(
 
     Args:
         token: API authentication token associated with the batch.
-        server: URL of the target API server.
         generator: Name of the generator associated with the batch.
         job_type: Type of job requested in the batch.
         job_params: :obj:`list` of :obj:`dict` containing input parameters for each job of the
             batch.
-        batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
         output_dir: Target output directory of the batch, as a string.
+        batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
+        server: URL of the target API server.
         write_to_file: Flag to serialize batch information to disk as a JSON file.
         request_delay: Delay in seconds between job request submissions for each job in the batch.
             Defaults to 50 milliseconds.
@@ -269,6 +276,11 @@ def submit_batch_to_api(
         ValueError: If an unsupported job type is requested.
         ValueError: If all batch jobs fail at submission.
     """
+
+    if token == "":
+        raise ValueError("`token` cannot be an empty string")
+    if generator == "":
+        raise ValueError("`generator` cannot be an empty string")
 
     batch_time = datetime.now()
     batch_timestamp = batch_time.strftime("%Y%m%d_T%H%M%S%f")
