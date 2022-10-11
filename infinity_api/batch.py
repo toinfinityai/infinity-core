@@ -19,6 +19,281 @@ from infinity_api.data_structures import JobType, SuccessfulJobRequest, FailedJo
 import infinity_api.api as api
 
 
+def _submit_jobs(
+    token: str,
+    generator: str,
+    job_type: JobType,
+    job_params: List[Dict[str, Any]],
+    output_dir: str,
+    timestamp: str,
+    batch_folder_suffix: Optional[str] = None,
+    batch_uid: Optional[str] = None,
+    server: str = api.DEFAULT_SERVER,
+    request_delay: float = 0.05,
+    write_temp_file: bool = True,
+) -> Tuple[str, List[SuccessfulJobRequest], List[FailedJobRequest], Path]:
+
+    if job_type == JobType.PREVIEW:
+        post_fn = api.post_preview
+    elif job_type == JobType.STANDARD:
+        post_fn = api.post_standard_job
+    else:
+        raise ValueError(f"Unsupported job type for batch submission: {job_type}")
+
+    jidx = 0
+    successful_requests: List[SuccessfulJobRequest] = []
+    failed_requests: List[FailedJobRequest] = []
+    if batch_uid is None:
+        # Submit jobs until first success to get batch ID from the backend.
+        for params in job_params:
+            json_data = {"name": generator, "param_values": params}
+            r = post_fn(token=token, json_data=json_data, server=server)
+            jidx += 1
+            if r.ok:
+                json_payload = r.json()
+                batch_uid = json_payload["batch_id"]
+                job_id = json_payload["id"]
+                successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
+                if write_temp_file:
+                    temp_file_path = PartialBatch(
+                        uid=batch_uid,
+                        folder_suffix=batch_folder_suffix,
+                        submitted_jobs=successful_requests,
+                        unsubmitted_jobs=job_params[jidx:],
+                        failed_requests=failed_requests,
+                        timestamp=timestamp,
+                        generator=generator,
+                        server=server,
+                        job_type=job_type,
+                        output_dir=output_dir,
+                    ).write_temp_file()
+                break
+            else:
+                failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
+                if write_temp_file:
+                    temp_file_path = PartialBatch(
+                        uid=batch_uid,
+                        folder_suffix=batch_folder_suffix,
+                        submitted_jobs=successful_requests,
+                        unsubmitted_jobs=job_params[jidx:],
+                        failed_requests=failed_requests,
+                        timestamp=timestamp,
+                        generator=generator,
+                        server=server,
+                        job_type=job_type,
+                        output_dir=output_dir,
+                    ).write_temp_file()
+            time.sleep(request_delay)
+        else:
+            try:
+                r.raise_for_status()
+            except Exception as e:
+                raise ValueError(f"All batch jobs failed in submission; last error: {e}")
+            else:
+                raise ValueError("All batch jobs failed in submission")
+
+    # Submit the rest of the jobs with the obtained unique batch ID.
+    for params in job_params[jidx:]:
+        json_data = {"name": generator, "param_values": params, "batch_id": batch_uid}
+        r = post_fn(token=token, json_data=json_data, server=server)
+        jidx += 1
+        if r.ok:
+            job_id = r.json()["id"]
+            successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
+        else:
+            failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
+        if write_temp_file:
+            temp_file_path = PartialBatch(
+                uid=batch_uid,
+                folder_suffix=batch_folder_suffix,
+                submitted_jobs=successful_requests,
+                unsubmitted_jobs=job_params[jidx:],
+                failed_requests=failed_requests,
+                timestamp=timestamp,
+                generator=generator,
+                server=server,
+                job_type=job_type,
+                output_dir=output_dir,
+            ).write_temp_file()
+        time.sleep(request_delay)
+
+    return batch_uid, successful_requests, failed_requests, temp_file_path
+
+
+@serialize
+@deserialize
+@dataclass(frozen=True)
+class PartialBatch:
+    """An encapsulation of a synthetic data batch partially submitted to the Infinity API.
+
+    This class is intended to capture partial state of batch submission interrupted on the host
+    side so that it may be later resumed.
+
+    Args:
+        uid: Unique batch ID.
+        folder_suffix: Descriptive suffix for batch folder stored on disk.
+        submitted_jobs: Jobs submitted to the API successfully.
+        unsubmitted_jobs: Jobs not yet submitted to the API.
+        failed_requests: Job requests that failed at API submission.
+        timestamp: Timestamp associated with *local* batch creation.
+        generator: Name of the generator associated with the batch.
+        server: URL of the target API server.
+        job_type: Type of job in the batch.
+        output_dir: Target output directory as a string.
+    """
+
+    uid: Optional[str]
+    folder_suffix: Optional[str]
+    submitted_jobs: List[SuccessfulJobRequest]
+    unsubmitted_jobs: List[Dict[str, Any]]
+    failed_requests: List[FailedJobRequest]
+    timestamp: str
+    generator: str
+    server: str
+    job_type: JobType
+    output_dir: str
+
+    @property
+    def batch_dir(self) -> str:
+        """str: Fully constructed partial batch output directory."""
+        if self.folder_suffix:
+            return f"_partial_{self.timestamp}_{self.folder_suffix[0:30]}"
+        else:
+            return f"_partial_{self.timestamp}"
+
+    @property
+    def num_successfully_submitted_jobs(self) -> int:
+        """`int` Number of successfully submitted job requests."""
+        return len(self.submitted_jobs)
+
+    @property
+    def num_unsubmitted_jobs(self) -> int:
+        """`int` Number of successfully submitted job requests."""
+        return len(self.unsubmitted_jobs)
+
+    @property
+    def num_failed_job_submissions(self) -> int:
+        """`int` Number of job requests that failed."""
+        return len(self.failed_requests)
+
+    def to_json(self) -> str:
+        """Serialize the batch data structure to a JSON string.
+
+        Returns:
+            JSON string containing serialized batch data.
+        """
+        return to_json(self, indent=4)
+
+    @classmethod
+    def from_batch_file(cls, json_file_path: Union[str, Path]) -> "PartialBatch":
+        """Deserialize a JSON partial batch file into a :obj:`PartialBatch`.
+
+        Args:
+            json_file_path: Path to a JSON file storing a previously constructed partial batch's
+                information.
+
+        Returns:
+            The deserialized :obj:`PartialBatch`.
+        """
+        with open(json_file_path, "r") as f:
+            json_str = f.read()
+        return cls.from_json(json_str=json_str)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "PartialBatch":
+        """Deserialize a JSON string into a :obj:`PartialBatch`.
+
+        Args:
+            json_str: JSON string containing a previously serialized partial batch's information.
+
+        Returns:
+            The deserialized :obj:`Batch`.
+        """
+        deserialized_batch = from_json(cls, json_str)
+        return replace(deserialized_batch)
+
+    def write_temp_file(self) -> Path:
+        """Write the partial batch to file (intended as a temporary file).
+
+        Returns:
+            The path to the written partial batch file.
+        """
+        partial_batch_path = Path(self.output_dir) / f"{self.batch_dir}"
+        partial_batch_path.mkdir(exist_ok=True)
+        serialized_batch_file = partial_batch_path / "_partial_batch.json"
+        with open(serialized_batch_file, "w") as f:
+            f.write(self.to_json())
+
+        return serialized_batch_file
+
+    def resume_submission(self, token: str, write_to_file: bool = True) -> Tuple["Batch", Optional[Path]]:
+        """Resume submission of the partially submitted batch.
+
+        Args:
+            token: API authentication token.
+
+        Returns:
+            The fully submitted :obj:`Batch`.
+        """
+        batch_uid, successful_requests, failed_requests, temp_file_path = _submit_jobs(
+            token=token,
+            generator=self.generator,
+            job_type=self.job_type,
+            job_params=self.unsubmitted_jobs,
+            output_dir=self.output_dir,
+            timestamp=self.timestamp,
+            batch_folder_suffix=self.folder_suffix,
+            batch_uid=self.uid,
+            server=self.server,
+            write_temp_file=True,
+        )
+
+        batch = Batch(
+            uid=batch_uid,
+            timestamp=self.timestamp,
+            folder_suffix=self.folder_suffix,
+            jobs=successful_requests,
+            failed_requests=failed_requests,
+            generator=self.generator,
+            server=self.server,
+            job_type=self.job_type,
+            token=token,
+            output_dir=self.output_dir,
+        )
+
+        if temp_file_path is not None:
+            temp_file_path.unlink()
+
+        batch_path = batch.write_to_file() if write_to_file else None
+
+        return batch, batch_path
+
+    def truncate_to_batch(self, token: str) -> "Batch":
+        """Convert partial batch to full batch by truncating the unsubmitted jobs.
+
+        Args:
+            token: API authentication token.
+
+        Returns:
+            A full :obj:`Batch` omitting unsubmitted jobs from the original submission attempt.
+        """
+        if self.uid is None:
+            raise ValueError("No successful jobs submitted to API; there is no `batch`")
+
+        return Batch(
+            uid=self.uid,
+            timestamp=self.timestamp,
+            folder_suffix=self.folder_suffix,
+            jobs=self.submitted_jobs,
+            failed_requests=self.failed_requests,
+            generator=self.generator,
+            server=self.server,
+            job_type=self.job_type,
+            output_dir=self.output_dir,
+            token=token,
+        )
+
+
 @serialize
 @deserialize
 @dataclass(frozen=True)
@@ -242,6 +517,15 @@ class Batch:
 
         return completed_jobs
 
+    def write_to_file(self) -> Path:
+        batch_path = Path(self.output_dir) / f"{self.batch_dir}"
+        batch_path.mkdir(exist_ok=True)
+        serialized_batch_file = batch_path / "batch.json"
+        with open(serialized_batch_file, "w") as f:
+            f.write(self.to_json())
+
+        return serialized_batch_file
+
 
 def submit_batch_to_api(
     token: str,
@@ -285,50 +569,20 @@ def submit_batch_to_api(
     batch_time = datetime.now()
     batch_timestamp = batch_time.strftime("%Y%m%d_T%H%M%S%f")
 
-    successful_requests = []
-    failed_requests = []
-
     print("Submitting jobs to API...")
 
-    # Submit jobs until first success to get batch ID from the backend.
-    jidx = 0
-    if job_type == JobType.PREVIEW:
-        post_fn = api.post_preview
-    elif job_type == JobType.STANDARD:
-        post_fn = api.post_standard_job
-    else:
-        raise ValueError(f"Unsupported job type for batch submission: {job_type}")
-    for params in job_params:
-        json_data = {"name": generator, "param_values": params}
-        r = post_fn(token=token, json_data=json_data, server=server)
-        jidx += 1
-        if r.ok:
-            json_payload = r.json()
-            batch_uid = json_payload["batch_id"]
-            job_id = json_payload["id"]
-            successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
-            break
-        else:
-            failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
-        time.sleep(request_delay)
-    else:
-        try:
-            r.raise_for_status()
-        except Exception as e:
-            raise ValueError(f"All batch jobs failed in submission; last error: {e}")
-        else:
-            raise ValueError("All batch jobs failed in submission")
-
-    # Submit the rest of the jobs with the obtained unique batch ID.
-    for params in job_params[jidx:]:
-        json_data = {"name": generator, "param_values": params, "batch_id": batch_uid}
-        r = post_fn(token=token, json_data=json_data, server=server)
-        if r.ok:
-            job_id = r.json()["id"]
-            successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
-        else:
-            failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
-        time.sleep(request_delay)
+    batch_uid, successful_requests, failed_requests, temp_file_path = _submit_jobs(
+        token=token,
+        generator=generator,
+        job_type=job_type,
+        job_params=job_params,
+        output_dir=output_dir,
+        timestamp=batch_timestamp,
+        batch_uid=None,
+        server=server,
+        request_delay=request_delay,
+        write_temp_file=True,
+    )
 
     batch = Batch(
         uid=batch_uid,
@@ -343,13 +597,9 @@ def submit_batch_to_api(
         output_dir=output_dir,
     )
 
-    if write_to_file:
-        batch_path = Path(output_dir) / f"{batch.batch_dir}"
-        batch_path.mkdir(exist_ok=False)
-        serialized_batch_file = batch_path / "batch.json"
-        with open(serialized_batch_file, "w") as f:
-            f.write(batch.to_json())
-    else:
-        batch_path = None
+    if temp_file_path is not None:
+        temp_file_path.unlink()
+
+    batch_path = batch.write_to_file() if write_to_file else None
 
     return batch, batch_path
