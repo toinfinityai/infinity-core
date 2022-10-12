@@ -49,6 +49,25 @@ Install from the source located on GitHub:
 Examples
 --------
 
+Using a `Session`
+*****************
+
+.. code-block:: python
+
+    from infinity_api.session import Session
+    token = "TOKEN"
+
+    sesh = Session(name="demo", generator="visionfit-v0.3.1", token=token)
+
+    # Print parameter information for the generator.
+    print(sesh.parameters)
+
+    # Post a single job with all default parameters.
+    single_preview = sesh.submit_preview_batch(job_params=[])
+
+    # Post a single job with all default parameters.
+    single_job = sesh.submit_standard_batch(job_params=[])
+
 Using the `api` module directly
 *******************************
 
@@ -75,8 +94,8 @@ Using the `api` module directly
     r = api.post_standard_job(token=token, json_data=json_for_default)
     assert r.ok
 
-Using the `batch` module
-************************
+Using the `batch` module directly
+*********************************
 
 .. code-block:: python
 
