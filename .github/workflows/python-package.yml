@@ -34,12 +34,15 @@ jobs:
       run: poetry install --no-interaction --no-root
     - name: Install package
       run: poetry install --no-interaction
-    - name: Format with black
+    - name: Check format with black
       run: |
         poetry run black --force-exclude docs --line-length 120 --diff --check $(git ls-files '*.py')
     - name: Type checking with mypy
       run: |
         poetry run mypy --strict $(git ls-files '*.py')
+    - name: Sort imports with isort
+      run: |
+        poetry run isort --line-length 120 --diff $(git ls-files '*.py')
     #- name: Lint with flake8
     #  run: |
     #    # stop the build if there are Python syntax errors or undefined names
