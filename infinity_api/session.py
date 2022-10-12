@@ -8,7 +8,7 @@ activities after a session is initialized.
 import functools
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from serde import deserialize, field, serialize
 from serde.json import from_json, to_json
@@ -66,8 +66,8 @@ class Session:
 
     def _submit_batch(
         self, job_params: List[Dict[str, Any]], job_type: JobType, batch_folder_suffix: Optional[str] = None
-    ) -> ba.Batch:
-        batch, _ = ba.submit_batch_to_api(
+    ) -> Tuple[ba.Batch, Optional[Path]]:
+        batch, batch_path = ba.submit_batch_to_api(
             token=self.token,
             generator=self.generator,
             job_type=job_type,
@@ -78,23 +78,42 @@ class Session:
             write_to_file=True,
         )
         self.batches.append(batch)
-        return batch
+        return batch, batch_path
 
     def submit_preview_batch(
         self, job_params: List[Dict[str, Any]], batch_folder_suffix: Optional[str] = None
-    ) -> ba.Batch:
+    ) -> Tuple[ba.Batch, Optional[Path]]:
+        """Submit a batch of 1 or more previews to the Infinity API.
+
+        Args:
+            job_params: A :obj:`list` of :obj:`dict` containing job parameters for the batch.
+            batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
+
+        Returns:
+            Tuple of the created :obj:`Batch` instance and a path to its metadata on disk.
+        """
         return self._submit_batch(
             job_params=job_params, job_type=JobType.PREVIEW, batch_folder_suffix=batch_folder_suffix
         )
 
     def submit_standard_batch(
         self, job_params: List[Dict[str, Any]], batch_folder_suffix: Optional[str] = None
-    ) -> ba.Batch:
+    ) -> Tuple[ba.Batch, Optional[Path]]:
+        """Submit a batch of 1 or more standard jobs (e.g., videos) to the Infinity API.
+
+        Args:
+            job_params: A :obj:`list` of :obj:`dict` containing job parameters for the batch.
+            batch_folder_suffix: Optional descriptive suffix for batch folder stored on disk.
+
+        Returns:
+            Tuple of the created :obj:`Batch` instance and a path to its metadata on disk.
+        """
         return self._submit_batch(
             job_params=job_params, job_type=JobType.STANDARD, batch_folder_suffix=batch_folder_suffix
         )
 
-    def write_to_file(self) -> Path:
+    def save(self) -> Path:
+        """Save the :obj:`Session` to disk."""
         serialized_session_file = Path(self.output_dir) / f"{self.session_filename}"
         serialized_session_file.mkdir(parents=True, exist_ok=True)
         with open(serialized_session_file, "w") as f:
