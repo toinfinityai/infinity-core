@@ -3,9 +3,9 @@
 This module contains common or important data structures used in other `infinity-api` modules.
 """
 
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Dict, Optional
-from dataclasses import dataclass
 
 from serde import serde
 

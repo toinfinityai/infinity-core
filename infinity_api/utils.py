@@ -1,7 +1,7 @@
-from typing import Any, List, Dict
 import urllib
 import zipfile
 from pathlib import Path
+from typing import Any, Dict, List
 
 import infinity_api.api as api
 from infinity_api.data_structures import CompletedJob, JobType

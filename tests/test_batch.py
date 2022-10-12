@@ -1,11 +1,10 @@
 from datetime import datetime
 
-from infinity_api.data_structures import JobType, SuccessfulJobRequest, FailedJobRequest
 import pytest
 
 import infinity_api.api as api
 import infinity_api.batch as ba
-from infinity_api.data_structures import JobType
+from infinity_api.data_structures import FailedJobRequest, JobType, SuccessfulJobRequest
 
 
 @pytest.fixture

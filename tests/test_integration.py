@@ -1,5 +1,4 @@
 from pathlib import Path
-from infinity_api.data_structures import JobType
 
 import pytest
 

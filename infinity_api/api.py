@@ -7,15 +7,14 @@ module provides a higher level abstraction for batches of synthetic data and use
 interact directly with the REST API.
 """
 
-from urllib.parse import urlencode, urljoin
 from datetime import datetime, timedelta
-from typing import Any, Optional, Dict, Tuple, Set
+from typing import Any, Dict, Optional, Set, Tuple
+from urllib.parse import urlencode, urljoin
 
 import requests
 from requests.models import Response
 
 from infinity_api.data_structures import HeaderKind
-
 
 DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 

@@ -5,18 +5,18 @@ batch submission/generation for Infinity synthetic data. Use this module's abstr
 track, and manipulate batches of synthetic data.
 """
 
-from typing import Any, Dict, Optional, List, Tuple, Union
-from datetime import datetime
 import time
 from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from serde import serialize, deserialize, field
-from serde.json import from_json, to_json
 import requests
+from serde import deserialize, field, serialize
+from serde.json import from_json, to_json
 
-from infinity_api.data_structures import JobType, SuccessfulJobRequest, FailedJobRequest, CompletedJob
 import infinity_api.api as api
+from infinity_api.data_structures import CompletedJob, FailedJobRequest, JobType, SuccessfulJobRequest
 
 
 def _submit_jobs(
