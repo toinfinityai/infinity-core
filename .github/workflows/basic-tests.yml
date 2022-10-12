@@ -38,7 +38,7 @@ jobs:
         poetry run mypy --strict $(git ls-files '*.py')
     - name: Sort imports with isort
       run: |
-        poetry run isort --line-length 120 $(git ls-files '*.py')
+        poetry run isort --line-length 120 --diff $(git ls-files '*.py')
     #- name: Lint with flake8
     #  run: |
     #    # stop the build if there are Python syntax errors or undefined names
