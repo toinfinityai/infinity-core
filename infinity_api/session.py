@@ -31,6 +31,12 @@ class Session:
     description: Optional[str] = None
     batches: List[ba.Batch] = field(default_factory=list)
     token: str = field(default="", metadata={"serde_skip": True})
+    _generator_param_info: List[Dict[str, Any]] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self._generator_param_info = api.get_single_generator_data(
+            token=self.token, generator_name=self.generator, server=self.server
+        ).json()["params"]
 
     @property
     def session_filename(self) -> str:
@@ -60,9 +66,13 @@ class Session:
         return replace(deserialized_sesh, token=token)
 
     @functools.cached_property
-    def parameters(self) -> Dict[str, str]:
-        # TODO: Get generator paramters from API call.
-        raise NotImplementedError
+    def generator_parameters(self) -> Dict[str, Dict[str, Any]]:
+        """dict: Parameters of the generator with metadata."""
+        pdict = dict()
+        for p in self._generator_param_info:
+            pdict[p["name"]] = {"type": p["type"], "default_value": p["default_value"], "options": p["options"]}
+
+        return pdict
 
     def _submit_batch(
         self, job_params: List[Dict[str, Any]], job_type: JobType, batch_folder_suffix: Optional[str] = None
