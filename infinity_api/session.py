@@ -122,8 +122,28 @@ class Session:
             job_params=job_params, job_type=JobType.STANDARD, batch_folder_suffix=batch_folder_suffix
         )
 
+    def query_usage_last_n_days(self, n_days: int) -> Dict[str, Any]:
+        """Query API for usage stats over the last N days.
+
+        Args:
+            n_days: Number of days looking back to gather usage stats for.
+
+        Returns:
+            Dictionary containing usage stats by generator.
+
+        Raises:
+            HTTPError: When the API query returns with an error status code.
+        """
+        r = api.get_usage_last_n_days(token=self.token, n_days=n_days, server=self.server)
+        r.raise_for_status()
+        return dict(r.json())
+
     def save(self) -> Path:
-        """Save the :obj:`Session` to disk."""
+        """Save the :obj:`Session` to disk.
+
+        Returns:
+            The path on disk where the `Session` was saved.
+        """
         serialized_session_file = Path(self.output_dir) / f"{self.session_filename}"
         serialized_session_file.mkdir(parents=True, exist_ok=True)
         with open(serialized_session_file, "w") as f:
