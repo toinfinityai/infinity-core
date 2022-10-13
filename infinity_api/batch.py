@@ -532,7 +532,7 @@ def submit_batch_to_api(
     generator: str,
     job_type: JobType,
     job_params: List[Dict[str, Any]],
-    output_dir: str,
+    output_dir: str = "tmp",
     batch_folder_suffix: Optional[str] = None,
     server: str = api.DEFAULT_SERVER,
     write_to_file: bool = True,
