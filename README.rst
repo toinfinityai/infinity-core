@@ -54,23 +54,25 @@ Using a `Session`
 
 .. code-block:: python
 
+    from pprint import pprint
     from infinity_api.session import Session
+    from infinity_api.data_structures import JobType
     token = "TOKEN"
 
-    sesh = Session(name="demo", generator="visionfit-v0.3.1", token=token)
+    sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
 
     # Print parameter information for the generator.
-    print(sesh.generator_parameters)
+    pprint(sesh.generator_parameters)
 
     # Post a single preview with all default parameters.
-    single_preview = sesh.submit_preview_batch(job_params=[{}])
+    single_preview = sesh.submit_to_api(job_params=[{"image_width": 512, "image_height": 512}])
 
     # Post a single job with all default parameters.
-    single_job = sesh.submit_standard_batch(job_params=[{}])
+    single_job = sesh.submit_to_api(job_params=[{"num_reps": 1}], job_type = JobType.STANDARD)
 
     # Query usage stats for the last month.
     usage_stats = sesh.query_usage_last_n_days(30)
-    print(usage_stats)
+    pprint(usage_stats)
 
 Using the `api` module directly
 *******************************
