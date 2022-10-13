@@ -60,13 +60,17 @@ Using a `Session`
     sesh = Session(name="demo", generator="visionfit-v0.3.1", token=token)
 
     # Print parameter information for the generator.
-    print(sesh.parameters)
+    print(sesh.generator_parameters)
+
+    # Post a single preview with all default parameters.
+    single_preview = sesh.submit_preview_batch(job_params=[{}])
 
     # Post a single job with all default parameters.
-    single_preview = sesh.submit_preview_batch(job_params=[])
+    single_job = sesh.submit_standard_batch(job_params=[{}])
 
-    # Post a single job with all default parameters.
-    single_job = sesh.submit_standard_batch(job_params=[])
+    # Query usage stats for the last month.
+    usage_stats = sesh.query_usage_last_n_days(30)
+    print(usage_stats)
 
 Using the `api` module directly
 *******************************
