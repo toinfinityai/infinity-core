@@ -94,13 +94,13 @@ class Session:
         return {k: d["options"] for k, d in self.gen_param_info.items()}
 
     def submit_to_api(
-        self, job_params: List[Dict[str, Any]], job_type: JobType = JobType.PREVIEW, batch_name: Optional[str] = None
+        self, job_params: List[Dict[str, Any]], preview: bool = True, batch_name: Optional[str] = None
     ) -> ba.Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
             job_params: A :obj:`list` of :obj:`dict` containing job parameters for the batch.
-            job_type: Type of job desired (e.g., preview or video).
+            preview: Flag to indicate a preview is desired instead of a full job (e.g., video).
             description: Optional descriptive for the submission.
 
         Returns:
@@ -114,6 +114,9 @@ class Session:
             # TODO: Or do we just fully want to defer to the backend's validation?
             self._validate_params(jp)
             complete_params.append({**self.gen_default_values, **jp})
+
+        # TODO: We can easily check from the API info if `preview` is supported by the generator.
+        job_type = JobType.PREVIEW if preview else JobType.STANDARD
         batch, _ = ba.submit_batch_to_api(
             token=self.token,
             generator=self.generator,
