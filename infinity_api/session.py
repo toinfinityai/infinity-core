@@ -34,9 +34,10 @@ class Session:
     _generator_param_info: List[Dict[str, Any]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self._generator_param_info = api.get_single_generator_data(
-            token=self.token, generator_name=self.generator, server=self.server
-        ).json()["params"]
+        if self.token != "":
+            self._generator_param_info = api.get_single_generator_data(
+                token=self.token, generator_name=self.generator, server=self.server
+            ).json()["params"]
 
     @property
     def session_filename(self) -> str:
@@ -62,8 +63,12 @@ class Session:
         Returns:
             The deserialized :obj:`Session`.
         """
+        # TODO: Hacky logic to get around `__post_init__` and skipping of serde for `token`.
         deserialized_sesh = from_json(cls, json_str)
-        return replace(deserialized_sesh, token=token)
+        sesh_with_token = replace(deserialized_sesh, token=token)
+        sesh_with_token.__post_init__()
+
+        return sesh_with_token
 
     @functools.cached_property
     def generator_parameters(self) -> Dict[str, Dict[str, Any]]:
