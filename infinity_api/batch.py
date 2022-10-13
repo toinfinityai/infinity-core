@@ -219,7 +219,7 @@ class PartialBatch:
             The path to the written partial batch file.
         """
         partial_batch_path = Path(self.output_dir) / f"{self.batch_dir}"
-        partial_batch_path.mkdir(exist_ok=True)
+        partial_batch_path.mkdir(parents=True, exist_ok=True)
         serialized_batch_file = partial_batch_path / "_partial_batch.json"
         with open(serialized_batch_file, "w") as f:
             f.write(self.to_json())
@@ -519,7 +519,7 @@ class Batch:
 
     def write_to_file(self) -> Path:
         batch_path = Path(self.output_dir) / f"{self.batch_dir}"
-        batch_path.mkdir(exist_ok=True)
+        batch_path.mkdir(parents=True, exist_ok=True)
         serialized_batch_file = batch_path / "batch.json"
         with open(serialized_batch_file, "w") as f:
             f.write(self.to_json())
