@@ -70,6 +70,9 @@ Using a `Session`
     # Post a single job with almost all default parameters.
     single_video = sesh.submit_to_api(job_params=[{"num_reps": 1}], preview=False)
 
+    # Post a small batch of previews varying a single parameter.
+    batch = sesh.submit_to_api(job_params=[{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}])
+
     # Query usage stats for the last month.
     usage_stats = sesh.query_usage_last_n_days(30)
     pprint(usage_stats)
