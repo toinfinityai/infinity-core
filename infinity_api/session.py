@@ -38,34 +38,40 @@ class Session:
         pinfo = self.gen_param_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
-        constraint_violation_set = set()
+        constraint_violation_list = list()
         for uk, uv in user_params.items():
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
+                continue
             param_options = pinfo[uk]["options"]
             if "min" in param_options:
-                if uv < param_options["min"]:
-                    constraint_violation_set.add((uk, "min", uv))
+                cv = param_options["min"]
+                if uv < cv:
+                    constraint_violation_list.append((uk, "min", cv, uv))
             if "max" in param_options:
-                if uv > param_options["max"]:
-                    constraint_violation_set.add((uk, "max", uv))
+                cv = param_options["max"]
+                if uv > cv:
+                    constraint_violation_list.append((uk, "max", cv, uv))
             if "choices" in param_options:
-                if uv not in param_options["choices"]:
-                    constraint_violation_set.add((uk, "choices", uv))
+                cv = param_options["choices"]
+                if uv not in cv:
+                    constraint_violation_list.append((uk, "choices", cv, uv))
 
         had_unsupported_parameter = False if unsupported_parameter_set == set() else True
-        violated_constraints = False if constraint_violation_set == set() else True
+        violated_constraints = False if len(constraint_violation_list) == 0 else True
 
         if not had_unsupported_parameter and not violated_constraints:
             return
         else:
             error_string = ""
             if had_unsupported_parameter:
+                error_string += "\n\nUnsupported parameters:\n"
                 for p in unsupported_parameter_set:
-                    error_string += f"Unsupporated parameter ({p}) "
+                    error_string += f"`{p}`"
             if violated_constraints:
-                for p, c, v in constraint_violation_set:
-                    error_string += f"Input parameter {p} violated constraint {c} with value {v} "
+                error_string += "\n\nConstraint violations:\n"
+                for p, c, cv, pv in constraint_violation_list:
+                    error_string += f"Input parameter `{p}` violated constraint `{c}` ({cv}) with value {pv}\n"
 
         raise GeneratorParameterException(error_string)
 
