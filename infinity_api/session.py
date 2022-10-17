@@ -81,7 +81,8 @@ class Session:
     @functools.cached_property
     def gen_default_values(self) -> Dict[str, Any]:
         """dict: Default values for parameters of the generator."""
-        return {k: d["default_value"] for k, d in self.gen_param_info.items()}
+        # TODO: Don't special case `state`: fix in backend/compute if default value is encountered.
+        return {k: d["default_value"] for k, d in self.gen_param_info.items() if not k == "state"}
 
     @functools.cached_property
     def gen_param_types(self) -> Dict[str, str]:
