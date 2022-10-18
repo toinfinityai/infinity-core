@@ -256,9 +256,9 @@ def submit_batch_to_api(
     print("Submitting jobs to API...")
 
     if job_type == JobType.PREVIEW:
-        r = api.post_preview_batch(token=token, json_data=job_params, server=server)
+        r = api.post_preview_batch(token=token, generator=generator, job_params=job_params, server=server)
     elif job_type == JobType.STANDARD:
-        r = api.post_standard_batch(token=token, json_data=job_params, server=server)
+        r = api.post_standard_batch(token=token, generator=generator, job_params=job_params, server=server)
     else:
         raise BatchJobTypeError("Unsupported job type `{job_type}` for batch submission")
 

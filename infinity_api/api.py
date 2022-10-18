@@ -405,17 +405,19 @@ def get_usage_last_n_days(
     return get_usage_datetime_range(token=token, server=server, start_time=start_time, end_time=end_time)
 
 
-def post_preview(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
+def post_preview(token: str, generator: str, job_params: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
     """Post a single preview request to the Infinity API.
 
     Args:
         token: User authentication token.
-        json_data: Dictionary containing the preview job data.
+        generator: Unique name of the target generator.
+        job_params: Dictionary containing the preview job parameters.
         server: Base server URL.
 
     Returns:
         HTTP request response.
     """
+    json_data = {"name": generator, "param_values": job_params}
     url, headers = build_request(
         token=token,
         server=server,
@@ -425,17 +427,19 @@ def post_preview(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SE
     return requests.post(url=url, headers=headers, json=json_data)
 
 
-def post_standard_job(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
+def post_standard_job(token: str, generator: str, job_params: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
     """Post a single standard job request to the Infinity API.
 
     Args:
         token: User authentication token.
-        json_data: Dictionary containing the job data.
+        generator: Unique name of the target generator.
+        job_params: Dictionary containing the job parameters.
         server: Base server URL.
 
     Returns:
         HTTP request response.
     """
+    json_data = {"name": generator, "param_values": job_params}
     url, headers = build_request(
         token=token,
         server=server,
@@ -446,18 +450,22 @@ def post_standard_job(token: str, json_data: Dict[str, Any], server: str = DEFAU
 
 
 # TODO: Implement in the backend.
-def post_preview_batch(token: str, json_data: List[Dict[str, Any]], server: str = DEFAULT_SERVER) -> Response:
+def post_preview_batch(
+    token: str, generator: str, job_params: List[Dict[str, Any]], server: str = DEFAULT_SERVER
+) -> Response:
     """Post a batch of previews to the Infinity API.
 
     Args:
         token: User authentication token.
-        json_data: Dictionary containing the job data.
+        generator: Unique name of the target generator.
+        job_params: List of dictionares containing job parameters for all jobs of the batch.
         server: Base server URL.
-        preview: Flag indicating if the batch is composed of previews or full jobs.
 
     Returns:
         HTTP request response.
     """
+    # TODO: Think about this but we should probably enforce 1 generator per batch as below.
+    json_data = {"name": generator, "param_values": job_params}
     url, headers = build_request(
         token=token,
         server=server,
@@ -468,18 +476,22 @@ def post_preview_batch(token: str, json_data: List[Dict[str, Any]], server: str 
 
 
 # TODO: Implement in the backend.
-def post_standard_batch(token: str, json_data: List[Dict[str, Any]], server: str = DEFAULT_SERVER) -> Response:
+def post_standard_batch(
+    token: str, generator: str, job_params: List[Dict[str, Any]], server: str = DEFAULT_SERVER
+) -> Response:
     """Post a batch of standard jobs to the Infinity API.
 
     Args:
         token: User authentication token.
-        json_data: Dictionary containing the job data.
+        generator: Unique name of the target generator.
+        job_params: List of dictionaries containing job parameters for all jobs of the batch.
         server: Base server URL.
-        preview: Flag indicating if the batch is composed of previews or full jobs.
 
     Returns:
         HTTP request response.
     """
+    # TODO: Think about this but we should probably enforce 1 generator per batch as below.
+    json_data = {"name": generator, "param_values": job_params}
     url, headers = build_request(
         token=token,
         server=server,

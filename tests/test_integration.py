@@ -114,14 +114,12 @@ class TestApiGetRequestIntegration:
 @pytest.mark.apipost
 class TestApiPostRequestIntegration:
     def test_post_preview(self, token: str, generator_name: str, server: str) -> None:
-        json_data = {"name": generator_name, "param_values": {}}
-        r = api.post_preview(token=token, json_data=json_data, server=server)
+        r = api.post_preview(token=token, generator=generator_name, job_params={}, server=server)
 
         assert r.ok
 
     def test_post_standard_job(self, token: str, generator_name: str, server: str) -> None:
-        json_data = {"name": generator_name, "param_values": {}}
-        r = api.post_standard_job(token=token, json_data=json_data, server=server)
+        r = api.post_standard_job(token=token, generator=generator_name, job_params={}, server=server)
 
         assert r.ok
 
