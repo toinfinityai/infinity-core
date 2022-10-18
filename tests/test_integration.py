@@ -126,31 +126,31 @@ class TestApiPostRequestIntegration:
         assert r.ok
 
 
-@pytest.mark.integration
-@pytest.mark.batchpost
-class TestBatchSubmissionIntegration:
-    def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
-        batch, _ = ba.submit_batch_to_api(
-            token=token,
-            generator=generator_name,
-            job_type=JobType.PREVIEW,
-            job_params=[dict()],
-            output_dir="tmp",
-            server=server,
-            write_to_file=False,
-        )
+# @pytest.mark.integration
+# @pytest.mark.batchpost
+# class TestBatchSubmissionIntegration:
+#     def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
+#         batch, _ = ba.submit_batch_to_api(
+#             token=token,
+#             generator=generator_name,
+#             job_type=JobType.PREVIEW,
+#             job_params=[dict()],
+#             output_dir="tmp",
+#             server=server,
+#             write_to_file=False,
+#         )
 
-        assert batch.num_successfully_submitted_jobs == 1
+#         assert batch.num_successfully_submitted_jobs == 1
 
-    def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
-        batch, _ = ba.submit_batch_to_api(
-            token=token,
-            generator=generator_name,
-            job_type=JobType.STANDARD,
-            job_params=[dict()],
-            output_dir="tmp",
-            server=server,
-            write_to_file=False,
-        )
+#     def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
+#         batch, _ = ba.submit_batch_to_api(
+#             token=token,
+#             generator=generator_name,
+#             job_type=JobType.STANDARD,
+#             job_params=[dict()],
+#             output_dir="tmp",
+#             server=server,
+#             write_to_file=False,
+#         )
 
-        assert batch.num_successfully_submitted_jobs == 1
+#         assert batch.num_successfully_submitted_jobs == 1

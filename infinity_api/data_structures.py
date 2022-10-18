@@ -48,29 +48,17 @@ class JobType(Enum):
 
 @serde
 @dataclass(frozen=True)
-class FailedJobRequest:
-    """A data structure encapsulating a failed API job request.
-
-    Attributes:
-        status_code (int): HTTP request status code returned in failure.
-        params (:obj:`dict`): Job parameters associated with the failed request.
-    """
-
-    status_code: int
-    params: Dict[str, Any]
-
-
-@serde
-@dataclass(frozen=True)
-class SuccessfulJobRequest:
+class SubmittedJob:
     """A data structure encapsulating a successful API job request.
 
     Attributes:
-        job_id (str): Unique job ID.
+        uid (str): Unique job ID.
+        generator (str): Name of the generator for the job.
         params (:obj:`dict`): Job parameters associated with the successful request.
     """
 
-    job_id: str
+    uid: str
+    generator: str
     params: Dict[str, Any]
 
 
@@ -79,11 +67,13 @@ class CompletedJob:
     """A data structured encapsulating a completed API job request.
 
     Attributes:
-        job_id (str): Unique job ID.
+        uid (str): Unique job ID.
+        generator (str): Name of the generator for the job.
         params (:obj:`dict`): Job parameters associated with the completed job.
         result_url (str, optional): URL containing completed job result data, if available.
     """
 
-    job_id: str
+    uid: str
+    generator: str
     params: Dict[str, Any]
     result_url: Optional[str] = None

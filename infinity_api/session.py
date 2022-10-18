@@ -124,14 +124,12 @@ class Session:
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if preview else JobType.STANDARD
-        batch, _ = ba.submit_batch_to_api(
+        batch = ba.submit_batch_to_api(
             token=self.token,
             generator=self.generator,
             job_type=job_type,
             job_params=complete_params,
-            batch_folder_suffix=batch_name,
             server=self.server,
-            write_to_file=True,
         )
         self.batches.append(batch)
         return batch

@@ -8,7 +8,7 @@ interact directly with the REST API.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode, urljoin
 
 import requests
@@ -156,6 +156,21 @@ def get_single_preview_job_data(token: str, preview_id: str, server: str = DEFAU
     return requests.get(url=url, headers=headers)
 
 
+def get_batch_preview_status(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get the status of a submitted preview batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously run batch of previews.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+    # TODO: Implement in backend.
+    pass
+
+
 def get_batch_preview_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for a given batch of previews associated with the given token.
 
@@ -167,6 +182,7 @@ def get_batch_preview_job_data(token: str, batch_id: str, server: str = DEFAULT_
     Returns:
         HTTP request response.
     """
+    # TODO: Update backend to make this about getting completed batch data.
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
     query_parameters = {"batch_id": batch_id}
     url, headers = build_request(
@@ -216,6 +232,21 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
         headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
     )
     return requests.get(url=url, headers=headers)
+
+
+def get_batch_standard_job_status(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
+    """Get the status of a submitted standard job batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously run batch of previews.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+    # TODO: Implement in backend.
+    pass
 
 
 def get_batch_standard_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
@@ -409,6 +440,50 @@ def post_standard_job(token: str, json_data: Dict[str, Any], server: str = DEFAU
         token=token,
         server=server,
         endpoint="api/jobs/run/",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
+    )
+    return requests.post(url=url, headers=headers, json=json_data)
+
+
+# TODO: Implement in the backend.
+def post_preview_batch(token: str, json_data: List[Dict[str, Any]], server: str = DEFAULT_SERVER) -> Response:
+    """Post a batch of previews to the Infinity API.
+
+    Args:
+        token: User authentication token.
+        json_data: Dictionary containing the job data.
+        server: Base server URL.
+        preview: Flag indicating if the batch is composed of previews or full jobs.
+
+    Returns:
+        HTTP request response.
+    """
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/submit_previews",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
+    )
+    return requests.post(url=url, headers=headers, json=json_data)
+
+
+# TODO: Implement in the backend.
+def post_standard_batch(token: str, json_data: List[Dict[str, Any]], server: str = DEFAULT_SERVER) -> Response:
+    """Post a batch of standard jobs to the Infinity API.
+
+    Args:
+        token: User authentication token.
+        json_data: Dictionary containing the job data.
+        server: Base server URL.
+        preview: Flag indicating if the batch is composed of previews or full jobs.
+
+    Returns:
+        HTTP request response.
+    """
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/submit_standard",
         headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
     )
     return requests.post(url=url, headers=headers, json=json_data)
