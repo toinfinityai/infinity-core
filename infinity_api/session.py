@@ -134,6 +134,22 @@ class Session:
         self.batches.append(batch)
         return batch
 
+    def rerun_batch(self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None) -> ba.Batch:
+        # TODO: Will this work for SenseFit et alia in addition to VisionFit?
+        # TODO: If not, let's standardize how `state` is expressed so that this will work
+        # TODO: automatically for all generators and their jobs.
+        self._validate_params(overrides)
+        job_params = []
+        for j in batch.jobs:
+            params = j.params
+            if "state" in self.gen_param_info.keys():
+                params["state"] = j.uid
+            # TODO: Confirm this does the right override order of operations.
+            params = {**self.gen_default_values, **params, **overrides}
+            job_params.append(params)
+
+        return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
+
     def query_usage_last_n_days(self, n_days: int) -> Dict[str, Any]:
         """Query API for usage stats over the last N days.
 

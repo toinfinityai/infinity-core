@@ -96,6 +96,12 @@ class Batch:
         """`int` Number of successfully submitted job requests."""
         return len(self.jobs)
 
+    @property
+    def num_remaining_jobs(self) -> int:
+        """`int` Number of jobs still in prgoress for the batch."""
+        # TODO: Backend must be updated to support this.
+        return self.num_jobs - int(self.get_batch_summary().json()["num_completed_jobs"])
+
     def get_batch_data(self) -> requests.models.Response:
         """Get detailed batch data from the API server.
 
