@@ -134,7 +134,9 @@ class Session:
         self.batches.append(batch)
         return batch
 
-    def rerun_batch(self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None) -> ba.Batch:
+    def rerun_batch(
+        self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None
+    ) -> ba.Batch:
         # TODO: Will this work for SenseFit et alia in addition to VisionFit?
         # TODO: If not, let's standardize how `state` is expressed so that this will work
         # TODO: automatically for all generators and their jobs.
