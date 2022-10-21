@@ -27,15 +27,15 @@ class Session:
     generator: str
     server: str = api.DEFAULT_SERVER
     batches: List[ba.Batch] = field(default_factory=list)
-    _generator_param_info: List[Dict[str, Any]] = field(default_factory=list)
+    _generator_info: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self._generator_param_info = api.get_single_generator_data(
+        self._generator_info = api.get_single_generator_data(
             token=self.token, generator_name=self.generator, server=self.server
-        ).json()["params"]
+        ).json()
 
     def _validate_params(self, user_params: Dict[str, Any]) -> None:
-        pinfo = self.gen_param_info
+        pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
         constraint_violation_list = list()
@@ -76,29 +76,19 @@ class Session:
         raise GeneratorParameterException(error_string)
 
     @functools.cached_property
-    def gen_param_info(self) -> Dict[str, Dict[str, Any]]:
+    def parameter_info(self) -> Dict[str, Dict[str, Any]]:
         """dict: Parameters of the generator with metadata."""
         pdict = dict()
-        for p in self._generator_param_info:
+        for p in self._generator_info["params"]:
             pdict[p["name"]] = {"type": p["type"], "default_value": p["default_value"], "options": p["options"]}
 
         return pdict
 
     @functools.cached_property
-    def gen_default_values(self) -> Dict[str, Any]:
+    def default_job(self) -> Dict[str, Any]:
         """dict: Default values for parameters of the generator."""
         # TODO: Don't special case `state`: fix in backend/compute if default value is encountered.
-        return {k: d["default_value"] for k, d in self.gen_param_info.items() if not k == "state"}
-
-    @functools.cached_property
-    def gen_param_types(self) -> Dict[str, str]:
-        """dict: Types for parameters of the generator."""
-        return {k: d["type"] for k, d in self.gen_param_info.items()}
-
-    @functools.cached_property
-    def gen_param_options(self) -> Dict[str, Any]:
-        """dict: Options and metadata for parameters of the generator."""
-        return {k: d["options"] for k, d in self.gen_param_info.items()}
+        return {k: d["default_value"] for k, d in self.parameter_info.items() if not k == "state"}
 
     def submit_to_api(
         self, job_params: List[Dict[str, Any]], preview: bool = True, batch_name: Optional[str] = None
@@ -120,7 +110,7 @@ class Session:
         for jp in job_params:
             # TODO: Or do we just fully want to defer to the backend's validation?
             self._validate_params(jp)
-            complete_params.append({**self.gen_default_values, **jp})
+            complete_params.append({**self.default_job, **jp})
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if preview else JobType.STANDARD
@@ -144,13 +134,19 @@ class Session:
         job_params = []
         for j in batch.jobs:
             params = j.params
-            if "state" in self.gen_param_info.keys():
+            if "state" in self.parameter_info.keys():
                 params["state"] = j.uid
             # TODO: Confirm this does the right override order of operations.
-            params = {**self.gen_default_values, **params, **overrides}
+            params = {**self.default_job, **params, **overrides}
             job_params.append(params)
 
         return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
+
+    def batch_from_api(self, batch_id: str) -> ba.Batch:
+        return ba.Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
+
+    def get_batches_last_n_days(self, n_days: int) -> List[ba.Batch]:
+        pass
 
     def query_usage_last_n_days(self, n_days: int) -> Dict[str, Any]:
         """Query API for usage stats over the last N days.
