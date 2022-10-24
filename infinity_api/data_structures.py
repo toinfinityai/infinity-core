@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Dict, Optional
 
-from serde import serde
-
 
 class HeaderKind(Enum):
     """Finite set of supported headers for HTTP requests."""
@@ -46,7 +44,6 @@ class JobType(Enum):
     STANDARD = auto()
 
 
-@serde
 @dataclass(frozen=True)
 class SubmittedJob:
     """A data structure encapsulating a successful API job request.
