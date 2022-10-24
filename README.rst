@@ -69,14 +69,16 @@ Using a `Session` (Basic)
         job_params=[{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}]
     )
 
-    # Wait for all the submitted synthetic data to complete.
+    # Wait for all the submitted synthetic data batches to complete.
     for batch in [single_preview, single_video, three_videos]:
         batch.await_jobs()
+    # Or you can use this: sesh.await_all()
     
     # Download the results.
     single_preview.download(path="tmp/single_preview")
     single_video.download(path="tmp/single_video")
     three_videos.download(path="tmp/camera_height_batch")
+    # Or you can use this: sesh.download_all("tmp/all_sesh_batches")
     
 Using a `Session` (Advanced)
 ****************************
