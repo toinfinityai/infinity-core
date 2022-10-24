@@ -94,19 +94,19 @@ Using a `Session` (Advanced)
     # Create a batch with specific properties.
     import numpy as np
     job_params = []
-    for jidx in range(100):
+    for _ in range(100):
         job_params.append({
-            "scene": "BEDROOM_2",
+            "scene": np.random.choice(["BEDROOM_2", "BEDROOM_4"]),
             "exercise": "UPPERCUT-RIGHT",
             "gender": np.random.choice(["MALE", "FEMALE"]),
             "num_reps": 5,
             "camera_height": np.random.uniform(1.0, 2.5),
-            "relative_height": truncnorm(2.0, 1.0, -4.0, 4.0), # Custom
+            "relative_height": truncnorm(2.0, 1.0, -4.0, 4.0), # Custom truncated Normal
             "image_width": 256,
             "image_height": 256,
         })
         
-    # Analyze job params before submission with `pandas`.
+    # Analyze job params before submission using `pandas` DataFrames.
     from pandas import DataFrame
     df = DataFrame.from_records(job_params)
     df.head()
