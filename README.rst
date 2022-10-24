@@ -62,8 +62,8 @@ Using a `Session` (Basic)
     
     # There is 1 way to generate synthetic data: submit a batch.
     # A single preview or job is just a batch with one element.
-    single_preview = sesh.submit_to_api(job_params=[{"image_width": 512, "image_height": 512}])
-    single_video = sesh.submit_to_api(job_params=[{"num_reps": 1}], preview=False)
+    single_preview = sesh.submit_to_api(job_params=[{"image_width": 512, "image_height": 512}], preview=True)
+    single_video = sesh.submit_to_api(job_params=[{"num_reps": 1}])
     three_videos = sesh.submit_to_api(
         # Notice this is a list of three job param dictionaries.
         job_params=[{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}]
