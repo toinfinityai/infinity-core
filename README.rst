@@ -91,6 +91,7 @@ Using a `Session` (Advanced)
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     
     # Create a batch with specific properties.
+    import numpy as np
     job_params = []
     for jidx in range(100):
         job_params.append({
