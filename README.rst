@@ -114,7 +114,7 @@ Using a `Session` (Advanced)
     job_params_final = df.to_dict("records")
     
     # Submit to generate synthetic data.
-    previews_batch = sesh.submit_to_api(job_params=job_params, preview=True)
+    previews_batch = sesh.submit_to_api(job_params=job_params_final, preview=True)
     print(batch.uid) # Print the batch ID.
     batch.await_jobs()
     batch.download(path="tmp/uppercut_right_custom1_previews")
