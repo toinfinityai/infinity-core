@@ -62,22 +62,21 @@ Using a `Session` (Basic)
     
     # There is 1 way to generate synthetic data: submit a batch.
     # A single preview or job is just a batch with one element.
-
-    # Post a single preview, await the result, and download it.
     single_preview = sesh.submit_to_api(job_params=[{"image_width": 512, "image_height": 512}])
-    single_preview.await_jobs()
-    single_preview.download(path="tmp/single_preview")
-
-    # Post a single video, await the result, and download it.
     single_video = sesh.submit_to_api(job_params=[{"num_reps": 1}], preview=False)
-    single_video.await_jobs()
-    single_video.download(path="tmp/single_video")
+    three_videos = sesh.submit_to_api(
+        # Notice this is a list of three job param dictionaries.
+        job_params=[{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}]
+    )
 
-    # Post a small batch of previews varying a single parameter.
-    job_params = [{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}]
-    batch = sesh.submit_to_api(job_params=job_params)
-    batch.await_jobs()
-    batch.download(path="tmp/camera_height_batch")
+    # Wait for all the submitted synthetic data to complete.
+    for batch in [single_preview, single_video, three_videos]:
+        batch.await_jobs()
+    
+    # Download the results.
+    single_preview.download(path="tmp/single_preview")
+    single_video.download(path="tmp/single_video")
+    three_videos.download(path="tmp/camera_height_batch")
     
 Using a `Session` (Advanced)
 ****************************
@@ -126,6 +125,7 @@ Using a `Session` (Advanced)
     df = DataFrame.from_records(old_uppercut_batch.jobs)
     # Filter/modify/etc.
     filtered_job_params = df.to_dict("records")
+    # Submit an updated batch.
     videos_batch = sesh.submit_to_api(job_params=filtered_job_params, preview=False)
     videos_batch.await_jobs()
     videos_batch.download(path="tmp/uppercut_right_custom1_videos")
@@ -155,7 +155,7 @@ Using a `Session` (API Utilities)
     # Query specific batches from the last month. This will return a list of
     # the batches you have submitted over the last month. You can view, analyze,
     # and use as a basis for another submission.
-    batches_last_month = sehs.get_batches_last_n_days(30)
+    batches_last_month = sesh.get_batches_last_n_days(30)
     pprint(batches_last_month)
     overrides = {"image_height": 512, "image_width": 512}
     new_batch = sesh.rerun_batch(batch=batches_last_month[2], overrides=overrides, preview=False)
@@ -187,23 +187,3 @@ Using the `api` module directly
     # Post a request for a single standard video job using default parameters.
     r = api.post_standard_job(token=token, json_data=json_for_default)
     assert r.ok
-
-Using the `batch` module directly
-*********************************
-
-.. code-block:: python
-
-    # Submit a batch of two previews and await the results.
-    from infinity_api import batch
-    from infinity_api.data_structures import JobType
-
-    small_batch = batch.submit_batch_to_api(
-        token=token,
-        generator="visionfit",
-        job_type=JobType.PREVIEW,
-        job_params=[json_for_default, json_for_default],
-        batch_folder_suffix="example_batch",
-        output_dir="tmp",
-    )
-    completed_jobs = small_batch.await_jobs()
-    print(completed_jobs)
