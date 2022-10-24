@@ -82,6 +82,8 @@ Using a `Session` (Basic)
 Using a `Session` (Advanced)
 ****************************
 
+.. code-block:: python
+
     from infinity_api.session import Session
 
     # Start a session.
@@ -129,6 +131,8 @@ Using a `Session` (Advanced)
     
 Using a `Session` (API Utilities)
 *********************************
+
+.. code-block:: python
 
     from pprint import pprint
     from infinity_api.session import Session
