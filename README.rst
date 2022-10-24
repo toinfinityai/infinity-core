@@ -112,6 +112,11 @@ Using a `Session` (Advanced)
     df.head()
     # Analyze/filter/modify/update ...
     job_params_final = df.to_dict("records")
+    # You can manually check/validate your job params before trying to submit:
+    try:
+        sesh.validate(job_params=job_params_final)
+    except Exception as e:
+        print("Errors: {e}")
     
     # Submit to generate synthetic data.
     previews_batch = sesh.submit_to_api(job_params=job_params_final, preview=True)
@@ -123,6 +128,8 @@ Using a `Session` (Advanced)
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     # Provide batch ID (from local history/notes or by querying the API).
     old_uppercut_batch = sesh.batch_from_api(batch_id="BATCH_ID")
+    # Immediately download the data if we need to.
+    old_uppercut_batch.download(path="tmp/uppercut_data_from_last_week")
     # Review the jobs with a DF UX.
     df = DataFrame.from_records(old_uppercut_batch.jobs)
     # Filter/modify/etc.
