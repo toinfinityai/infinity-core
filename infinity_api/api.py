@@ -449,9 +449,8 @@ def post_standard_job(token: str, generator: str, job_params: Dict[str, Any], se
     return requests.post(url=url, headers=headers, json=json_data)
 
 
-# TODO: Implement in the backend.
-def post_preview_batch(
-    token: str, generator: str, job_params: List[Dict[str, Any]], server: str = DEFAULT_SERVER
+def post_batch(
+    token: str, generator: str, name: str, job_params: List[Dict[str, Any]], is_preview: bool, server: str
 ) -> Response:
     """Post a batch of previews to the Infinity API.
 
@@ -464,38 +463,14 @@ def post_preview_batch(
     Returns:
         HTTP request response.
     """
+    # TODO: docstring!!
     # TODO: Think about this but we should probably enforce 1 generator per batch as below.
-    json_data = {"name": generator, "param_values": job_params}
+    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": p} for p in job_params]
+    json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
         token=token,
         server=server,
-        endpoint="api/batch/submit_previews",
-        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
-    )
-    return requests.post(url=url, headers=headers, json=json_data)
-
-
-# TODO: Implement in the backend.
-def post_standard_batch(
-    token: str, generator: str, job_params: List[Dict[str, Any]], server: str = DEFAULT_SERVER
-) -> Response:
-    """Post a batch of standard jobs to the Infinity API.
-
-    Args:
-        token: User authentication token.
-        generator: Unique name of the target generator.
-        job_params: List of dictionaries containing job parameters for all jobs of the batch.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    # TODO: Think about this but we should probably enforce 1 generator per batch as below.
-    json_data = {"name": generator, "param_values": job_params}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/batch/submit_standard",
+        endpoint="api/batch/",
         headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
     )
     return requests.post(url=url, headers=headers, json=json_data)
