@@ -189,7 +189,7 @@ Using the `api` module directly
     print(usage_stats)
 
     # Post a request for a single preview using default parameters.
-    r = api.post_preview(
+    r = api.post_batch(
         token=token,
         generator="visionfit",
         name="single preview",
@@ -200,7 +200,7 @@ Using the `api` module directly
     assert r.ok
 
     # Post a request for three standard video jobs using default parameters.
-    r = api.post_preview(
+    r = api.post_batch(
         token=token,
         generator="visionfit",
         name="three default jobs",
