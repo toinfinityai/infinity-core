@@ -91,13 +91,13 @@ class Session:
         return {k: d["default_value"] for k, d in self.parameter_info.items() if not k == "state"}
 
     def submit_to_api(
-        self, job_params: List[Dict[str, Any]], preview: bool = True, batch_name: Optional[str] = None
+        self, job_params: List[Dict[str, Any]], is_preview: bool = True, batch_name: Optional[str] = None
     ) -> ba.Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
             job_params: A :obj:`list` of :obj:`dict` containing job parameters for the batch.
-            preview: Flag to indicate a preview is desired instead of a full job (e.g., video).
+            is_preview: Flag to indicate a preview is desired instead of a full job (e.g., video).
             description: Optional descriptive for the submission.
 
         Returns:
@@ -113,34 +113,35 @@ class Session:
             complete_params.append({**self.default_job, **jp})
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
-        job_type = JobType.PREVIEW if preview else JobType.STANDARD
+        job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
         batch = ba.submit_batch_to_api(
             token=self.token,
             generator=self.generator,
             job_type=job_type,
             job_params=complete_params,
+            name=batch_name,
             server=self.server,
         )
         self.batches.append(batch)
         return batch
 
-    def rerun_batch(
-        self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None
-    ) -> ba.Batch:
-        # TODO: Will this work for SenseFit et alia in addition to VisionFit?
-        # TODO: If not, let's standardize how `state` is expressed so that this will work
-        # TODO: automatically for all generators and their jobs.
-        self._validate_params(overrides)
-        job_params = []
-        for j in batch.jobs:
-            params = j.params
-            if "state" in self.parameter_info.keys():
-                params["state"] = j.uid
-            # TODO: Confirm this does the right override order of operations.
-            params = {**self.default_job, **params, **overrides}
-            job_params.append(params)
+    # def rerun_batch(
+    #     self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None
+    # ) -> ba.Batch:
+    #     # TODO: Will this work for SenseFit et alia in addition to VisionFit?
+    #     # TODO: If not, let's standardize how `state` is expressed so that this will work
+    #     # TODO: automatically for all generators and their jobs.
+    #     self._validate_params(overrides)
+    #     job_params = []
+    #     for j in batch.jobs:
+    #         params = j.params
+    #         if "state" in self.parameter_info.keys():
+    #             params["state"] = j.uid
+    #         # TODO: Confirm this does the right override order of operations.
+    #         params = {**self.default_job, **params, **overrides}
+    #         job_params.append(params)
 
-        return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
+    #     return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
 
     def batch_from_api(self, batch_id: str) -> ba.Batch:
         return ba.Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)

@@ -113,13 +113,24 @@ class TestApiGetRequestIntegration:
 @pytest.mark.integration
 @pytest.mark.apipost
 class TestApiPostRequestIntegration:
-    def test_post_preview(self, token: str, generator_name: str, server: str) -> None:
-        r = api.post_preview(token=token, generator=generator_name, job_params={}, server=server)
+    def test_post_batch_preview(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}], is_preview=True, server=server
+        )
 
         assert r.ok
 
-    def test_post_standard_job(self, token: str, generator_name: str, server: str) -> None:
-        r = api.post_standard_job(token=token, generator=generator_name, job_params={}, server=server)
+    def test_post_batch_standard(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}], is_preview=False, server=server
+        )
+
+        assert r.ok
+
+    def test_post_multi_job_batch(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}, {}], is_preview=True, server=server
+        )
 
         assert r.ok
 

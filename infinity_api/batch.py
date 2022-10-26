@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import requests
 
@@ -21,7 +21,7 @@ class BatchJobTypeError(Exception):
     pass
 
 
-class BatchRetrivalError(Exception):
+class BatchRetrievalError(Exception):
     pass
 
 
@@ -34,14 +34,14 @@ def _get_batch_data_raw_with_type(
         if len(r.json()) > 0:
             return r
         else:
-            raise BatchRetrivalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
+            raise BatchRetrievalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
     elif job_type == JobType.STANDARD:
         r = api.get_batch_standard_job_data(token=token, batch_id=batch_id, server=server)
         r.raise_for_status()
         if len(r.json()) > 0:
             return r
         else:
-            raise BatchRetrivalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
+            raise BatchRetrievalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
     else:
         raise BatchJobTypeError("Unsupported job type `{job_type}` for batch retrieval")
 
@@ -54,7 +54,7 @@ def _get_batch_data_raw_unknown_type(
             _get_batch_data_raw_with_type(token=token, batch_id=batch_id, job_type=JobType.PREVIEW, server=server),
             JobType.PREVIEW,
         )
-    except BatchRetrivalError:
+    except BatchRetrievalError:
         pass
 
     try:
@@ -62,10 +62,10 @@ def _get_batch_data_raw_unknown_type(
             _get_batch_data_raw_with_type(token=token, batch_id=batch_id, job_type=JobType.STANDARD, server=server),
             JobType.STANDARD,
         )
-    except BatchRetrivalError:
+    except BatchRetrievalError:
         pass
 
-    raise BatchRetrivalError("Batch `{batch_id}` does not exist")
+    raise BatchRetrievalError("Batch `{batch_id}` does not exist")
 
 
 @dataclass(frozen=True)
@@ -233,6 +233,7 @@ def submit_batch_to_api(
     generator: str,
     job_type: JobType,
     job_params: List[Dict[str, Any]],
+    name: Optional[str] = None,
     server: str = api.DEFAULT_SERVER,
 ) -> Batch:
     """Submits a batch of jobs to the Infinity API.
@@ -258,17 +259,18 @@ def submit_batch_to_api(
         raise ValueError("`token` cannot be an empty string")
     if generator == "":
         raise ValueError("`generator` cannot be an empty string")
+    name = "" if name is None else name
 
     print("Submitting jobs to API...")
 
-    if job_type == JobType.PREVIEW:
-        r = api.post_preview_batch(token=token, generator=generator, job_params=job_params, server=server)
-    elif job_type == JobType.STANDARD:
-        r = api.post_standard_batch(token=token, generator=generator, job_params=job_params, server=server)
-    else:
-        raise BatchJobTypeError("Unsupported job type `{job_type}` for batch submission")
-
+    is_preview = True if job_type == JobType.PREVIEW else False
+    r = api.post_batch(
+        token=token, generator=generator, name=name, job_params=job_params, is_preview=is_preview, server=server
+    )
     r.raise_for_status()
-    batch_id = r.json()["batch_id"]
+    response_data = r.json()
+    batch_id = response_data["batch_id"]
 
-    return Batch.from_api(token=token, batch_id=batch_id, server=server)
+    # TODO Implement this based on post response details.
+    jobs = NotImplemented
+    return Batch(token=token, uid=batch_id, jobs=jobs, server=server, job_type=job_type)

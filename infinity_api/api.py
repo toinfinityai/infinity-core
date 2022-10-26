@@ -405,67 +405,23 @@ def get_usage_last_n_days(
     return get_usage_datetime_range(token=token, server=server, start_time=start_time, end_time=end_time)
 
 
-def post_preview(token: str, generator: str, job_params: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
-    """Post a single preview request to the Infinity API.
-
-    Args:
-        token: User authentication token.
-        generator: Unique name of the target generator.
-        job_params: Dictionary containing the preview job parameters.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    json_data = {"name": generator, "param_values": job_params}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/jobs/preview/",
-        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
-    )
-    return requests.post(url=url, headers=headers, json=json_data)
-
-
-def post_standard_job(token: str, generator: str, job_params: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
-    """Post a single standard job request to the Infinity API.
-
-    Args:
-        token: User authentication token.
-        generator: Unique name of the target generator.
-        job_params: Dictionary containing the job parameters.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    json_data = {"name": generator, "param_values": job_params}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/jobs/run/",
-        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
-    )
-    return requests.post(url=url, headers=headers, json=json_data)
-
-
 def post_batch(
     token: str, generator: str, name: str, job_params: List[Dict[str, Any]], is_preview: bool, server: str
 ) -> Response:
-    """Post a batch of previews to the Infinity API.
+    """Post a batch to the Infinity API.
 
     Args:
         token: User authentication token.
         generator: Unique name of the target generator.
+        name: Descriptive name for the batch.
         job_params: List of dictionares containing job parameters for all jobs of the batch.
+        is_preview: Flag indicating the batch consists of preview job types.
         server: Base server URL.
 
     Returns:
         HTTP request response.
     """
-    # TODO: docstring!!
-    # TODO: Think about this but we should probably enforce 1 generator per batch as below.
-    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": p} for p in job_params]
+    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
     json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
         token=token,
