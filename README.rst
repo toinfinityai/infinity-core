@@ -115,8 +115,8 @@ Using a `Session` (Advanced)
     # You can manually check/validate your job params before trying to submit:
     try:
         sesh.validate(job_params=job_params_final)
-    except Exception as e:
-        print("Errors: {e}")
+    except ValidationError as e:
+        print("Validation errors: {e}")
     
     # Submit to generate synthetic data.
     previews_batch = sesh.submit_to_api(job_params=job_params_final, preview=True)
@@ -178,7 +178,7 @@ Using the `api` module directly
 
     from infinity_api import api
 
-    my_token = "MY_TOKEN" # Your authentication token from Infinity AI.
+    token = "MY_TOKEN" # Your authentication token from Infinity AI.
 
     # Get parameter information for a specific VisionFit generator.
     visionfit_info = api.get_single_generator_data(token=token, generator_name="visionfit-v0.3.1")
@@ -189,10 +189,23 @@ Using the `api` module directly
     print(usage_stats)
 
     # Post a request for a single preview using default parameters.
-    json_for_default = {"name": "visionfit", "param_values": {}}
-    r = api.post_preview(token=token, json_data=json_for_default)
+    r = api.post_preview(
+        token=token,
+        generator="visionfit",
+        name="single preview",
+        job_params=[{}],
+        is_preview=True,
+        server=api.DEFAULT_SERVER
+    )
     assert r.ok
 
-    # Post a request for a single standard video job using default parameters.
-    r = api.post_standard_job(token=token, json_data=json_for_default)
+    # Post a request for three standard video jobs using default parameters.
+    r = api.post_preview(
+        token=token,
+        generator="visionfit",
+        name="three default jobs",
+        job_params=[{}, {}, {}],
+        is_preview=False,
+        server=api.DEFAULT_SERVER
+    )
     assert r.ok
