@@ -3,8 +3,6 @@ from pathlib import Path
 import pytest
 
 import infinity_api.api as api
-import infinity_api.batch as ba
-from infinity_api.data_structures import JobType
 
 
 def _construct_config_file(filename: str) -> Path:
@@ -65,7 +63,7 @@ class TestApiGetRequestIntegration:
         assert r.ok
 
     def test_get_batch_preview_job_data(self, token: str, preview_batch_id: str, server: str) -> None:
-        r = api.get_batch_preview_job_data(token=token, batch_id=preview_batch_id, server=server)
+        r = api.get_batch_data(token=token, batch_id=preview_batch_id, server=server)
 
         assert r.ok
 
@@ -80,7 +78,7 @@ class TestApiGetRequestIntegration:
         assert r.ok
 
     def test_get_batch_standard_job_data(self, token: str, standard_batch_id: str, server: str) -> None:
-        r = api.get_batch_standard_job_data(token=token, batch_id=standard_batch_id, server=server)
+        r = api.get_batch_data(token=token, batch_id=standard_batch_id, server=server)
 
         assert r.ok
 
