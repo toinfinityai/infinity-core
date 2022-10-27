@@ -56,29 +56,22 @@ Using a `Session` (Basic)
 
     from infinity_api.session import Session
 
-    # Start a session.
+    # Start a session with the Infinity API.
     token = "TOKEN"
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     
-    # There is 1 way to generate synthetic data: submit a batch.
-    # A single preview or job is just a batch with one element.
-    single_preview = sesh.submit_to_api(job_params=[{"image_width": 512, "image_height": 512}], preview=True)
-    single_video = sesh.submit_to_api(job_params=[{"num_reps": 1}])
-    three_videos = sesh.submit_to_api(
-        # Notice this is a list of three job param dictionaries.
-        job_params=[{"camera_height": 1.0}, {"camera_height": 1.5}, {"camera_height": 2.0}]
-    )
-
-    # Wait for all the submitted synthetic data batches to complete.
-    for batch in [single_preview, single_video, three_videos]:
-        batch.await_jobs()
-    # Or you can use this: sesh.await_all()
+    # Submit a request for three synthetic data videos.
+    job_params = [{"camera_height": v} for v in [1.0, 1.5, 2.0]]
+    videos = sesh.submit(job_params=job_params)
+    
+    # Manually check if they are done yet.
+    print(f"Completed yet? Answer: {videos.num_remaining_jobs > 0)})
+    
+    # Manually block until they are all done.
+    videos.await_completion()
     
     # Download the results.
-    single_preview.download(path="tmp/single_preview")
-    single_video.download(path="tmp/single_video")
-    three_videos.download(path="tmp/camera_height_batch")
-    # Or you can use this: sesh.download_all("tmp/all_sesh_batches")
+    videos.download(path="tmp/three_camera_height_sweep_videos")
     
 Using a `Session` (Advanced)
 ****************************
@@ -91,7 +84,7 @@ Using a `Session` (Advanced)
     token = "TOKEN"
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     
-    # Create a batch with specific properties.
+    # Create a big batch with specific properties.
     import numpy as np
     job_params = []
     for _ in range(100):
@@ -109,8 +102,7 @@ Using a `Session` (Advanced)
     # Analyze job params before submission using `pandas` DataFrames.
     from pandas import DataFrame
     df = DataFrame.from_records(job_params)
-    df.head()
-    # Analyze/filter/modify/update ...
+    # ... do stuff like filter/modify/add to the dataframe ...
     job_params_final = df.to_dict("records")
     # You can manually check/validate your job params before trying to submit:
     try:
@@ -119,25 +111,31 @@ Using a `Session` (Advanced)
         print("Validation errors: {e}")
     
     # Submit to generate synthetic data.
-    previews_batch = sesh.submit_to_api(job_params=job_params_final, preview=True)
-    print(batch.uid) # Print the batch ID.
-    batch.await_jobs()
+    previews_batch = sesh.submit(name="app1", job_params=job_params_final, preview=True)
+    print(f"Submitted batch ID: {batch.uid}) # Print the batch ID.
+    batch.await_completion()
     batch.download(path="tmp/uppercut_right_custom1_previews")
     
-    # Next week... come back and pick up where you left off.
+    # Next week... come back and pick up where you left off:
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     # Provide batch ID (from local history/notes or by querying the API).
-    old_uppercut_batch = sesh.batch_from_api(batch_id="BATCH_ID")
-    # Immediately download the data if we need to.
-    old_uppercut_batch.download(path="tmp/uppercut_data_from_last_week")
-    # Review the jobs with a DF UX.
-    df = DataFrame.from_records(old_uppercut_batch.jobs)
-    # Filter/modify/etc.
-    filtered_job_params = df.to_dict("records")
-    # Submit an updated batch.
-    videos_batch = sesh.submit_to_api(job_params=filtered_job_params, preview=False)
-    videos_batch.await_jobs()
-    videos_batch.download(path="tmp/uppercut_right_custom1_videos")
+    old_uppercut_batch = sesh.batch_from_api(batch_id="UPPERCUT_BATCH_ID")
+    # Review the jobs with a `DataFrame` UX.
+    df_uppercut = DataFrame.from_records(old_uppercut_batch.job_params)
+    # ... do stuff like filter/modify/add to the dataframe ...
+    updated_job_params = df_uppercut.to_dict("records")
+    # Grab another batch:
+    old_pushup_batch = sesh.batch_from_api(batch_id="PUSHUP_BATCH_ID")
+    df_pushup = DataFrame.from_records(old_pushup_batch.job_params)
+    # ... do stuff like filter/modify/add to the dataframe ...
+    # Merge the updated uppercut and pushup jobs into a single list of jobs.
+    merged_df = pandas.concat([df_uppercut, df_pushup])
+    final_job_params = merged_df.to_dict("records")
+
+    # Submit the updated and combined new batch.
+    videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, preview=False)
+    videos_batch.await_completion()
+    videos_batch.download(path="tmp/updated_and_merged_rerun")
     
 Using a `Session` (API Utilities)
 *********************************
@@ -158,19 +156,29 @@ Using a `Session` (API Utilities)
 
     # Query usage stats for the last month. This will break down your token's
     # usage stats as the number of samples rendered per unique generator.
-    usage_stats = sesh.query_usage_last_n_days(30)
+    usage_stats = sesh.get_usage_stats_last_n_days(30)
     pprint(usage_stats)
     
     # Query specific batches from the last month. This will return a list of
     # the batches you have submitted over the last month. You can view, analyze,
     # and use as a basis for another submission.
     batches_last_month = sesh.get_batches_last_n_days(30)
-    pprint(batches_last_month)
+    for name, batch_id in batches_last_month:
+        print(f"{name} ({batch_id}))
     overrides = {"image_height": 512, "image_width": 512}
-    new_batch = sesh.rerun_batch(batch=batches_last_month[2], overrides=overrides, preview=False)
-    new_batch.await_jobs()
-    new_batch.download(path="higher_res_batch")
     
+    # Target the third batch for a rerun.
+    _name, batch_id = batches_last_month[2]
+    third_batch = sesh.batch_from_api(batch_id=batch_id)
+    job_params = third_batch.job_params
+    for jp in job_params:
+        jp["image_width": 512]
+        jp["image_height": 512]
+    
+    third_batch_higher_res = sesh.submit(name="higher res", job_params=job_params)
+    third_batch_higher_res.await_completion()
+    third_batch.download(path="higher_res_batch")
+
 Using the `api` module directly
 *******************************
 
