@@ -156,45 +156,6 @@ def get_single_preview_job_data(token: str, preview_id: str, server: str = DEFAU
     return requests.get(url=url, headers=headers)
 
 
-def get_batch_preview_status(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get the status of a submitted preview batch.
-
-    Args:
-        token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of previews.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    # TODO: Implement in backend.
-    pass
-
-
-def get_batch_preview_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get data for a given batch of previews associated with the given token.
-
-    Args:
-        token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of previews.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    # TODO: Update backend to make this about getting completed batch data.
-    headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
-    query_parameters = {"batch_id": batch_id}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/job_previews/",
-        headers=headers_set,
-        query_parameters=query_parameters,
-    )
-    return requests.get(url=url, headers=headers)
-
-
 def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for all standard jobs associated with the given token.
 
@@ -234,40 +195,13 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
     return requests.get(url=url, headers=headers)
 
 
-def get_batch_standard_job_status(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get the status of a submitted standard job batch.
-
-    Args:
-        token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of previews.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    # TODO: Implement in backend.
-    pass
-
-
-def get_batch_standard_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get data for a given batch of standard jobs associated with the given token.
-
-    Args:
-        token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of jobs.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
+def get_batch_data(token: str, batch_id: str, server: str) -> Response:
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
-    query_parameters = {"batch_id": batch_id}
     url, headers = build_request(
         token=token,
         server=server,
-        endpoint="api/job_runs/",
+        endpoint=f"api/batch/{batch_id}/",
         headers=headers_set,
-        query_parameters=query_parameters,
     )
     return requests.get(url=url, headers=headers)
 
