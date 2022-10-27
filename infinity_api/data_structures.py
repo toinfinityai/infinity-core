@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Dict, Optional
 
+JobParams = Dict[str, Any]
+
 
 class HeaderKind(Enum):
     """Finite set of supported headers for HTTP requests."""

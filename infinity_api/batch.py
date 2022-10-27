@@ -8,13 +8,12 @@ track, and manipulate batches of synthetic data.
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import requests
 
 import infinity_api.api as api
-from infinity_api.data_structures import CompletedJob, JobType, SubmittedJob
+from infinity_api.data_structures import CompletedJob, JobParams, JobType
 
 
 class BatchJobTypeError(Exception):
@@ -25,47 +24,24 @@ class BatchRetrievalError(Exception):
     pass
 
 
-def _get_batch_data_raw_with_type(
-    token: str, batch_id: str, job_type: JobType, server: str = api.DEFAULT_SERVER
-) -> requests.models.Response:
-    if job_type == JobType.PREVIEW:
-        r = api.get_batch_preview_job_data(token=token, batch_id=batch_id, server=server)
-        r.raise_for_status()
-        if len(r.json()) > 0:
-            return r
-        else:
-            raise BatchRetrievalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
-    elif job_type == JobType.STANDARD:
-        r = api.get_batch_standard_job_data(token=token, batch_id=batch_id, server=server)
-        r.raise_for_status()
-        if len(r.json()) > 0:
-            return r
-        else:
-            raise BatchRetrievalError("Batch `{batch_id}` with job type `{job_type}` does not exist")
-    else:
-        raise BatchJobTypeError("Unsupported job type `{job_type}` for batch retrieval")
+def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server: str) -> JobParams:
+    # TODO: Find a better way to deal with this.
+    generator = json_data["job_runs"][0]["name"]
+    r2 = api.get_single_generator_data(token=token, generator_name=generator, server=server)
+    r2.raise_for_status()
+    param_names = set([p["name"] for p in r2.json()["params"]])
+    save_state = True if "state" in param_names else False
 
+    jobs = {}
+    # TODO: Backend needs to return properly typed JSON.
+    for jr in json_data["job_runs"]:
+        params = jr["param_values"]
+        jid = jr["id"]
+        if save_state:
+            params["state"] = jid
+        jobs[jid] = params
 
-def _get_batch_data_raw_unknown_type(
-    token: str, batch_id: str, server: str = api.DEFAULT_SERVER
-) -> Tuple[requests.models.Response, JobType]:
-    try:
-        return (
-            _get_batch_data_raw_with_type(token=token, batch_id=batch_id, job_type=JobType.PREVIEW, server=server),
-            JobType.PREVIEW,
-        )
-    except BatchRetrievalError:
-        pass
-
-    try:
-        return (
-            _get_batch_data_raw_with_type(token=token, batch_id=batch_id, job_type=JobType.STANDARD, server=server),
-            JobType.STANDARD,
-        )
-    except BatchRetrievalError:
-        pass
-
-    raise BatchRetrievalError("Batch `{batch_id}` does not exist")
+    return jobs
 
 
 @dataclass(frozen=True)
@@ -75,32 +51,44 @@ class Batch:
     Args:
         token: User authentication token.
         uid: Unique batch ID.
-        jobs: Jobs submitted to the API successfully.
+        name: Short description of the batch.
+        jobs: Jobs submitted to the API successfully as uid:JobParams dict entries.
         server: URL of the target API server.
         job_type: Type of job in the batch.
     """
 
     token: str
     uid: str
-    jobs: List[SubmittedJob]
+    name: str
+    jobs: Dict[str, JobParams]
     server: str
     job_type: JobType
 
-    @cached_property
+    @property
     def job_ids(self) -> List[str]:
-        """:obj:`list` of :obj:`str`: List of job IDs for successfully submitted job requests."""
-        return [j.uid for j in self.jobs]
+        """:obj:`list` of :obj:`str`: List of job IDs for jobs in the batch."""
+        return list(self.jobs.keys())
+
+    @property
+    def job_params(self) -> List[JobParams]:
+        """:obj:`list` of :obj:`JobParams`: List of job parameters for jobs in the batch."""
+        return list(self.jobs.values())
 
     @property
     def num_jobs(self) -> int:
         """`int` Number of successfully submitted job requests."""
         return len(self.jobs)
 
-    @property
-    def num_remaining_jobs(self) -> int:
+    def get_num_jobs_remaining(self) -> int:
+        # TODO: Update doc string as no longer a property.
         """`int` Number of jobs still in prgoress for the batch."""
-        # TODO: Backend must be updated to support this.
-        return self.num_jobs - int(self.get_batch_summary().json()["num_completed_jobs"])
+        data = self.get_batch_data().json()
+        num_completed = 0
+        for jr in data["job_runs"]:
+            if not jr["in_progress"]:
+                num_completed += 1
+
+        return self.num_jobs - num_completed
 
     def get_batch_data(self) -> requests.models.Response:
         """Get detailed batch data from the API server.
@@ -111,11 +99,12 @@ class Batch:
         Raises:
             HTTPError: If the API query fails.
         """
-        r = _get_batch_data_raw_with_type(
-            token=self.token, batch_id=self.uid, job_type=self.job_type, server=self.server
-        )
+        r = api.get_batch_data(token=self.token, batch_id=self.uid, server=self.server)
         r.raise_for_status()
-        return r
+        if len(r.json()) > 0:
+            return r
+        else:
+            raise BatchRetrievalError(f"Batch `{self.uid}` does not exist")
 
     def get_batch_summary(self) -> requests.models.Response:
         """Get batch summary data from the API server.
@@ -127,16 +116,8 @@ class Batch:
             HTTPError: If the API query fails.
             BatchJobTypeError: If the batch is associated with an unsupported job type.
         """
-        if self.job_type == JobType.PREVIEW:
-            r = api.get_batch_preview_status(token=self.token, batch_id=self.uid, server=self.server)
-            r.raise_for_status()
-            return r
-        elif self.job_type == JobType.STANDARD:
-            r = api.get_batch_standard_job_status(token=self.token, batch_id=self.uid, server=self.server)
-            r.raise_for_status()
-            return r
-        else:
-            raise BatchJobTypeError("Unsupported job type `{self.job_type}` for batch summary retrieval")
+        # TODO: Implement with summary endpoint when available.
+        return self.get_batch_data()
 
     @classmethod
     def from_api(cls, token: str, batch_id: str, server: str = api.DEFAULT_SERVER) -> "Batch":
@@ -149,15 +130,19 @@ class Batch:
 
         Returns:
             A :obj:`Batch` created with information from the API.
-        """
-        r, job_type = _get_batch_data_raw_unknown_type(token=token, batch_id=batch_id, server=server)
-        data = r.json()
-        jobs = []
-        for j in data:
-            # TODO: Backend must be updated to support grabbing of params.
-            jobs.append(SubmittedJob(uid=j["id"], generator=j["job"], params=j["params"]))
 
-        return cls(token=token, uid=batch_id, jobs=jobs, server=server, job_type=job_type)
+        Raises:
+            HTTPError: If the API query fails.
+        """
+        r = api.get_batch_data(token=token, batch_id=batch_id, server=server)
+        r.raise_for_status()
+        data = r.json()
+        batch_id = data["id"]
+        job_type = JobType.PREVIEW if data["job_runs"][0]["is_preview"] else JobType.STANDARD
+        jobs = _parse_jobs_from_response_data(data, token=token, server=server)
+        name = data["name"]
+
+        return cls(token=token, uid=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
 
     def get_completed_jobs(self) -> List[CompletedJob]:
         """Returns a list of completed batch jobs.
@@ -165,14 +150,16 @@ class Batch:
         Returns:
             :obj:`list` of :obj:`CompletedJob` A list of currently completed batch jobs.
         """
-        r = self.get_batch_data()
+        data = self.get_batch_data().json()
 
-        # TODO: Backend must be modified to support `params`.
         # TODO: Compared to previous, this may lose the order of the original jobs, if that is/was important.
+        # TODO: Can the backend ensure ordering is preserved?
         completed_jobs = []
-        for j in r.json():
+        for jr in data["job_runs"]:
             completed_jobs.append(
-                CompletedJob(uid=j["id"], generator=j["job"], params=j["params"], result_url=j["result_url"])
+                CompletedJob(
+                    uid=jr["id"], generator=jr["name"], params=self.jobs[jr["id"]], result_url=jr["result_url"]
+                )
             )
 
         return completed_jobs
@@ -189,7 +176,7 @@ class Batch:
         """
         return [cj for cj in self.get_completed_jobs() if cj.result_url]
 
-    def await_jobs(self, polling_interval: float = 10) -> List[CompletedJob]:
+    def await_completion(self, polling_interval: float = 10) -> List[CompletedJob]:
         """Serially poll and wait for all jobs in the batch to complete (blocking).
 
         WARNING: This function will hang forever if a backend error leads to a hung job
@@ -206,17 +193,12 @@ class Batch:
         if num_jobs == 0:
             return []
         start_time = datetime.now()
-        num_completed_jobs = 0
+        num_jobs_remaining = self.num_jobs
 
-        while num_completed_jobs != num_jobs:
+        while num_jobs_remaining > 0:
+            num_jobs_remaining = self.get_num_jobs_remaining()
             elapsed_time = int((datetime.now() - start_time).seconds)
-            print(
-                f"{num_jobs - num_completed_jobs} remaining jobs [{elapsed_time:d} s]...\t\t\t",
-                end="\r",
-            )
-            r = self.get_batch_summary()
-            # TODO: Backend must be changed to support this.
-            num_completed_jobs = r.json()["num_completed_jobs"]
+            print(f"{num_jobs_remaining} remaining jobs [{elapsed_time:d} s]...\t\t\t", end="\r")
             time.sleep(polling_interval)
 
         duration = datetime.now() - start_time
@@ -261,7 +243,7 @@ def submit_batch_to_api(
         raise ValueError("`generator` cannot be an empty string")
     name = "" if name is None else name
 
-    print("Submitting jobs to API...")
+    print("Submitting batch of jobs to the API...")
 
     is_preview = True if job_type == JobType.PREVIEW else False
     r = api.post_batch(
@@ -270,7 +252,7 @@ def submit_batch_to_api(
     r.raise_for_status()
     response_data = r.json()
     batch_id = response_data["batch_id"]
+    jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 
     # TODO Implement this based on post response details.
-    jobs = NotImplemented
-    return Batch(token=token, uid=batch_id, jobs=jobs, server=server, job_type=job_type)
+    return Batch(token=token, uid=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
