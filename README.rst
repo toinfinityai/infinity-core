@@ -65,7 +65,7 @@ Using a `Session` (Basic)
     videos = sesh.submit(job_params=job_params)
     
     # Manually check if they are done yet.
-    print(f"Completed yet? Answer: {videos.num_remaining_jobs > 0)})
+    print(f"Completed yet? Answer: {videos.num_remaining_jobs == 0)})
     
     # Manually block until they are all done.
     videos.await_completion()
@@ -165,7 +165,6 @@ Using a `Session` (API Utilities)
     batches_last_month = sesh.get_batches_last_n_days(30)
     for name, batch_id in batches_last_month:
         print(f"{name} ({batch_id}))
-    overrides = {"image_height": 512, "image_width": 512}
     
     # Target the third batch for a rerun.
     _name, batch_id = batches_last_month[2]
