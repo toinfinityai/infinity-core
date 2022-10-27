@@ -210,7 +210,7 @@ class Batch:
         return self.get_valid_completed_jobs()
 
 
-def submit_batch_to_api(
+def submit_batch(
     token: str,
     generator: str,
     job_type: JobType,

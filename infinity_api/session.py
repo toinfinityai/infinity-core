@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import infinity_api.api as api
-from infinity_api.batch import Batch, submit_batch_to_api
+from infinity_api.batch import Batch, submit_batch
 from infinity_api.data_structures import JobParams, JobType
 
 
@@ -90,9 +90,7 @@ class Session:
         # TODO: Don't special case `state`: fix in backend/compute if default value is encountered.
         return {k: d["default_value"] for k, d in self.parameter_info.items() if not k == "state"}
 
-    def submit_to_api(
-        self, job_params: List[JobParams], is_preview: bool = True, batch_name: Optional[str] = None
-    ) -> Batch:
+    def submit(self, job_params: List[JobParams], is_preview: bool = True, batch_name: Optional[str] = None) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
@@ -114,7 +112,7 @@ class Session:
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
-        batch = submit_batch_to_api(
+        batch = submit_batch(
             token=self.token,
             generator=self.generator,
             job_type=job_type,
@@ -141,7 +139,7 @@ class Session:
     #         params = {**self.default_job, **params, **overrides}
     #         job_params.append(params)
 
-    #     return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
+    #     return self.submit(job_params=job_params, preview=preview, batch_name=batch_name)
 
     def batch_from_api(self, batch_id: str) -> Batch:
         return Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
