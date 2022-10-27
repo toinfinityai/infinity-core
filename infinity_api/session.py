@@ -7,14 +7,14 @@ activities after a session is initialized.
 
 import functools
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import infinity_api.api as api
-import infinity_api.batch as ba
-from infinity_api.data_structures import JobType
+from infinity_api.batch import Batch, submit_batch_to_api
+from infinity_api.data_structures import JobParams, JobType
 
 
-class GeneratorParameterException(Exception):
+class ParameterValidationError(Exception):
     pass
 
 
@@ -26,7 +26,7 @@ class Session:
     name: str
     generator: str
     server: str = api.DEFAULT_SERVER
-    batches: List[ba.Batch] = field(default_factory=list)
+    batches: List[Batch] = field(default_factory=list)
     _generator_info: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -34,7 +34,7 @@ class Session:
             token=self.token, generator_name=self.generator, server=self.server
         ).json()
 
-    def _validate_params(self, user_params: Dict[str, Any]) -> None:
+    def _validate_params(self, user_params: JobParams) -> None:
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
@@ -73,7 +73,7 @@ class Session:
                 for p, c, cv, pv in constraint_violation_list:
                     error_string += f"Input parameter `{p}` violated constraint `{c}` ({cv}) with value {pv}\n"
 
-        raise GeneratorParameterException(error_string)
+        raise ParameterValidationError(error_string)
 
     @functools.cached_property
     def parameter_info(self) -> Dict[str, Dict[str, Any]]:
@@ -85,14 +85,14 @@ class Session:
         return pdict
 
     @functools.cached_property
-    def default_job(self) -> Dict[str, Any]:
+    def default_job(self) -> JobParams:
         """dict: Default values for parameters of the generator."""
         # TODO: Don't special case `state`: fix in backend/compute if default value is encountered.
         return {k: d["default_value"] for k, d in self.parameter_info.items() if not k == "state"}
 
     def submit_to_api(
-        self, job_params: List[Dict[str, Any]], is_preview: bool = True, batch_name: Optional[str] = None
-    ) -> ba.Batch:
+        self, job_params: List[JobParams], is_preview: bool = True, batch_name: Optional[str] = None
+    ) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
@@ -104,7 +104,7 @@ class Session:
             The created :obj:`Batch` instance.
 
         Raises:
-            GeneratorParameterException: If supplied parameters are not supported by the generator.
+            ParameterValidationError: If supplied parameters are not supported by the generator.
         """
         complete_params = []
         for jp in job_params:
@@ -114,7 +114,7 @@ class Session:
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
-        batch = ba.submit_batch_to_api(
+        batch = submit_batch_to_api(
             token=self.token,
             generator=self.generator,
             job_type=job_type,
@@ -126,7 +126,7 @@ class Session:
         return batch
 
     # def rerun_batch(
-    #     self, batch: ba.Batch, overrides: Dict[str, Any], preview: bool = True, batch_name: Optional[str] = None
+    #     self, batch: ba.Batch, overrides: JobParams, preview: bool = True, batch_name: Optional[str] = None
     # ) -> ba.Batch:
     #     # TODO: Will this work for SenseFit et alia in addition to VisionFit?
     #     # TODO: If not, let's standardize how `state` is expressed so that this will work
@@ -143,13 +143,14 @@ class Session:
 
     #     return self.submit_to_api(job_params=job_params, preview=preview, batch_name=batch_name)
 
-    def batch_from_api(self, batch_id: str) -> ba.Batch:
-        return ba.Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
+    def batch_from_api(self, batch_id: str) -> Batch:
+        return Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
 
-    def get_batches_last_n_days(self, n_days: int) -> List[ba.Batch]:
+    def get_batches_last_n_days(self, n_days: int) -> List[Tuple[str, str]]:
+        # TODO: Implement based on available endpoint when ready.
         pass
 
-    def query_usage_last_n_days(self, n_days: int) -> Dict[str, Any]:
+    def get_usage_stats_last_n_days(self, n_days: int) -> Dict[str, Any]:
         """Query API for usage stats over the last N days.
 
         Args:
