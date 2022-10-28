@@ -5,10 +5,14 @@ batch submission/generation for Infinity synthetic data. Use this module's abstr
 track, and manipulate batches of synthetic data.
 """
 
+import concurrent.futures
+import io
 import time
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
@@ -33,7 +37,6 @@ def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server
     save_state = True if "state" in param_names else False
 
     jobs = {}
-    # TODO: Backend needs to return properly typed JSON.
     for jr in json_data["job_runs"]:
         params = jr["param_values"]
         jid = jr["id"]
@@ -42,6 +45,13 @@ def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server
         jobs[jid] = params
 
     return jobs
+
+
+def _download_and_extract_zip(download_info: Tuple[str, Path]) -> None:
+    url, target_path = download_info
+    r = requests.get(url)
+    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+        z.extractall(target_path)
 
 
 @dataclass(frozen=True)
@@ -81,7 +91,11 @@ class Batch:
 
     def get_num_jobs_remaining(self) -> int:
         # TODO: Update doc string as no longer a property.
-        """`int` Number of jobs still in prgoress for the batch."""
+        """Get number of jobs still in progress.
+
+        Returns:
+            Number of jobs remaining (computation in progress).
+        """
         data = self.get_batch_data().json()
         num_completed = 0
         for jr in data["job_runs"]:
@@ -208,6 +222,23 @@ class Batch:
         # TODO: Update the following to work as expected with new querying.
         # TODO: Removed guarantee of same order as in `self.jobs`; is that OK?
         return self.get_valid_completed_jobs()
+
+    def download(self, path: str, overwrite: bool = False) -> None:
+        """Download completed jobs to a target folder.
+
+        Args:
+            path: Target path to download batch jobs to.
+            overwrite: Flag for behavior if target path exists. If `True`, the target folder will
+                be fully overwritten. If `False`, detected already downloaded jobs will not be
+                re-downloaded.
+        """
+        # TODO Add logic to not download already downloaded jobs if present in `out_dir`.
+        out_dir = Path(path)
+        downloadable_jobs = self.get_valid_completed_jobs()
+        download_info = [(j.result_url, out_dir / str(j.uid)) for j in downloadable_jobs]
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(_download_and_extract_zip, download_info)
 
 
 def submit_batch(
