@@ -150,7 +150,7 @@ class Session:
         start_time = end_time - datetime.timedelta(days=n_days)
         r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
         r.raise_for_status()
-        data = r.json()
+        data: List[Dict[str, Any]] = r.json()
         for batch in data:
             batch["created"] = datetime.datetime.fromisoformat(batch["created"])
 
