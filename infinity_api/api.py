@@ -195,6 +195,45 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
     return requests.get(url=url, headers=headers)
 
 
+def get_batch_list(
+    token: str,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    server: str = DEFAULT_SERVER
+) -> Response:
+    """Get a list of batches associated with the given token over some time range.
+
+    Args:
+        token: User authentication token.
+        start_time: Optional start time for query.
+        end_time: Optional end time for query.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+    if end_time is not None and start_time is not None:
+        if end_time < start_time:
+            raise ValueError(f"End time ({end_time}) before start time ({start_time}) for usage query")
+    query_parameters = dict()
+    if start_time is not None:
+        if start_time.tzinfo is None:
+            start_time = start_time.astimezone()
+        query_parameters["start_time"] = start_time.isoformat()
+    if end_time is not None:
+        if end_time.tzinfo is None:
+            end_time = end_time.astimezone()
+        query_parameters["end_time"] = end_time.isoformat()
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
+        query_parameters=query_parameters,
+    )
+    return requests.get(url=url, headers=headers)
+
+
 def get_batch_data(token: str, batch_id: str, server: str) -> Response:
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
     url, headers = build_request(

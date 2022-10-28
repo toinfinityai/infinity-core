@@ -5,6 +5,7 @@ Session API abstracts away details of user authentication and certain configurat
 activities after a session is initialized.
 """
 
+import datetime
 import functools
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -144,9 +145,16 @@ class Session:
     def batch_from_api(self, batch_id: str) -> Batch:
         return Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
 
-    def get_batches_last_n_days(self, n_days: int) -> List[Tuple[str, str]]:
-        # TODO: Implement based on available endpoint when ready.
-        pass
+    def get_batches_last_n_days(self, n_days: int) -> List[Dict[str, Any]]:
+        end_time = datetime.datetime.now().astimezone()
+        start_time = end_time - datetime.timedelta(days=n_days)
+        r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
+        r.raise_for_status()
+        data = r.json()
+        for batch in data:
+            batch["created"] = datetime.datetime.fromisoformat(batch["created"])
+
+        return data
 
     def get_usage_stats_last_n_days(self, n_days: int) -> Dict[str, Any]:
         """Query API for usage stats over the last N days.

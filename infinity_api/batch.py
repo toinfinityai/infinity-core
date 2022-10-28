@@ -251,7 +251,7 @@ def submit_batch(
     )
     r.raise_for_status()
     response_data = r.json()
-    batch_id = response_data["batch_id"]
+    batch_id = response_data["id"]
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 
     # TODO Implement this based on post response details.
