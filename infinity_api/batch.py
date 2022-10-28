@@ -90,13 +90,12 @@ class Batch:
         return len(self.jobs)
 
     def get_num_jobs_remaining(self) -> int:
-        # TODO: Update doc string as no longer a property.
         """Get number of jobs still in progress.
 
         Returns:
             Number of jobs remaining (computation in progress).
         """
-        data = self.get_batch_data().json()
+        data = self.get_batch_summary_data().json()
         num_completed = 0
         for jr in data["job_runs"]:
             if not jr["in_progress"]:
@@ -120,7 +119,7 @@ class Batch:
         else:
             raise BatchRetrievalError(f"Batch `{self.uid}` does not exist")
 
-    def get_batch_summary(self) -> requests.models.Response:
+    def get_batch_summary_data(self) -> requests.models.Response:
         """Get batch summary data from the API server.
 
         Returns:
@@ -130,8 +129,12 @@ class Batch:
             HTTPError: If the API query fails.
             BatchJobTypeError: If the batch is associated with an unsupported job type.
         """
-        # TODO: Implement with summary endpoint when available.
-        return self.get_batch_data()
+        r = api.get_batch_summary_data(token=self.token, batch_id=self.uid, server=self.server)
+        r.raise_for_status()
+        if len(r.json()) > 0:
+            return r
+        else:
+            raise BatchRetrievalError(f"Batch `{self.uid}` does not exist")
 
     @classmethod
     def from_api(cls, token: str, batch_id: str, server: str = api.DEFAULT_SERVER) -> "Batch":
@@ -164,7 +167,7 @@ class Batch:
         Returns:
             :obj:`list` of :obj:`CompletedJob` A list of currently completed batch jobs.
         """
-        data = self.get_batch_data().json()
+        data = self.get_batch_summary_data().json()
 
         # TODO: Compared to previous, this may lose the order of the original jobs, if that is/was important.
         # TODO: Can the backend ensure ordering is preserved?

@@ -8,7 +8,7 @@ activities after a session is initialized.
 import datetime
 import functools
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import infinity_api.api as api
 from infinity_api.batch import Batch, submit_batch
@@ -88,8 +88,7 @@ class Session:
     @functools.cached_property
     def default_job(self) -> JobParams:
         """dict: Default values for parameters of the generator."""
-        # TODO: Don't special case `state`: fix in backend/compute if default value is encountered.
-        return {k: d["default_value"] for k, d in self.parameter_info.items() if not k == "state"}
+        return {k: d["default_value"] for k, d in self.parameter_info.items()}
 
     def submit(self, job_params: List[JobParams], is_preview: bool = True, batch_name: Optional[str] = None) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.

@@ -253,6 +253,27 @@ def get_batch_data(token: str, batch_id: str, server: str) -> Response:
     return requests.get(url=url, headers=headers)
 
 
+def get_batch_summary_data(token: str, batch_id: str, server: str) -> Response:
+    """Get detailed information on a previously submitted batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously submitted batch.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+    headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint=f"api/batch/summary/{batch_id}/",
+        headers=headers_set,
+    )
+    return requests.get(url=url, headers=headers)
+
+
 def get_all_generator_data(token: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data on all of the generators associated with the given token.
 
