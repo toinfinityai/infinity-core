@@ -196,10 +196,7 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
 
 
 def get_batch_list(
-    token: str,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    server: str = DEFAULT_SERVER
+    token: str, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None, server: str = DEFAULT_SERVER
 ) -> Response:
     """Get a list of batches associated with the given token over some time range.
 
@@ -235,6 +232,17 @@ def get_batch_list(
 
 
 def get_batch_data(token: str, batch_id: str, server: str) -> Response:
+    """Get detailed information on a previously submitted batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously submitted batch.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
     url, headers = build_request(
         token=token,
