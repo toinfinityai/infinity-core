@@ -17,27 +17,27 @@ Infinity API
 .. image:: https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336
     :target: https://pycqa.github.io/isort/
 
-The **infinity_api** package provides tools to interact with the `Infinity API <https://infinity.ai>`_ and generate synthetic data.
+The **infinity_core** package provides tools to interact with the `Infinity API <https://infinity.ai>`_ and generate synthetic data.
 
 Requirements
 ------------
 
-The **infinity_api** package requires Python 3.7 or newer.
+The **infinity_core** package requires Python 3.7 or newer.
 
 Installation
 ------------
-
-Add to a Python project with Poetry:
-
-.. code-block:: text
-
-    poetry add infinity_api
 
 Install from PyPI:
 
 .. code-block:: text
 
-    pip install infinity_api
+    pip install infinity_core
+
+Add to a Python project with Poetry:
+
+.. code-block:: text
+
+    poetry add infinity_core
 
 Install from the source located on GitHub:
 
@@ -54,7 +54,7 @@ Using a `Session` (Basic)
 
 .. code-block:: python
 
-    from infinity_api.session import Session
+    from infinity_core.session import Session
 
     # Start a session with the Infinity API.
     token = "TOKEN"
@@ -78,7 +78,7 @@ Using a `Session` (Advanced)
 
 .. code-block:: python
 
-    from infinity_api.session import Session
+    from infinity_core.session import Session
 
     # Start a session.
     token = "TOKEN"
@@ -143,7 +143,7 @@ Using a `Session` (API Utilities)
 .. code-block:: python
 
     from pprint import pprint
-    from infinity_api.session import Session
+    from infinity_core.session import Session
 
     # Start a session.
     token = "TOKEN"
@@ -183,7 +183,7 @@ Using the `api` module directly
 
 .. code-block:: python
 
-    from infinity_api import api
+    from infinity_core import api
 
     token = "MY_TOKEN" # Your authentication token from Infinity AI.
 

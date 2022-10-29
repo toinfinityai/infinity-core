@@ -1,10 +1,10 @@
 import urllib
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List
 
-import infinity_api.api as api
-from infinity_api.data_structures import CompletedJob, JobType
+import infinity_core.api as api
+from infinity_core.data_structures import CompletedJob, JobType
 
 
 def download_completed_jobs(completed_jobs: List[CompletedJob], output_dir: str) -> List[Path]:

@@ -2,9 +2,9 @@
 
 # import pytest
 
-# import infinity_api.api as api
-# import infinity_api.batch as ba
-# from infinity_api.data_structures import FailedJobRequest, JobType, SuccessfulJobRequest
+# import infinity_core.api as api
+# import infinity_core.batch as ba
+# from infinity_core.data_structures import FailedJobRequest, JobType, SuccessfulJobRequest
 
 
 # @pytest.fixture

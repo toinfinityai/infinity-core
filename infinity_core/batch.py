@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-import infinity_api.api as api
-from infinity_api.data_structures import CompletedJob, JobParams, JobType, ValidCompletedJob
+import infinity_core.api as api
+from infinity_core.data_structures import CompletedJob, JobParams, JobType, ValidCompletedJob
 
 
 class BatchJobTypeError(Exception):

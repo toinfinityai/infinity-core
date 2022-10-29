@@ -1,8 +1,8 @@
 [tool.poetry]
 authors = ["Daniel Hensley <daniel@toinfinity.ai>"]
-description = "Infinity AI API wrapper"
-name = "infinity-api"
-packages = [{include = "infinity_api"}]
+description = "Infinity AI core API wrapper"
+name = "infinity-core"
+packages = [{include = "infinity_core"}]
 readme = "README.rst"
 version = "0.1.0"
 

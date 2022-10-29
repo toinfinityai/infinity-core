@@ -1,37 +1,45 @@
-infinity\_api Package Documentation
-===================================
+infinity\_core Package Documentation
+====================================
 
 Submodules
 ----------
 
-infinity\_api.api module
-------------------------
+infinity\_core.api module
+-------------------------
 
-.. automodule:: infinity_api.api
+.. automodule:: infinity_core.api
    :members:
    :undoc-members:
    :show-inheritance:
 
-infinity\_api.batch module
---------------------------
+infinity\_core.session module
+-----------------------------
 
-.. automodule:: infinity_api.batch
+.. automodule:: infinity_core.session
    :members:
    :undoc-members:
    :show-inheritance:
 
-infinity\_api.data\_structures module
--------------------------------------
+infinity\_core.batch module
+---------------------------
 
-.. automodule:: infinity_api.data_structures
+.. automodule:: infinity_core.batch
    :members:
    :undoc-members:
    :show-inheritance:
 
-infinity\_api.utils module
---------------------------
+infinity\_core.data\_structures module
+--------------------------------------
 
-.. automodule:: infinity_api.utils
+.. automodule:: infinity_core.data_structures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+infinity\_core.utils module
+---------------------------
+
+.. automodule:: infinity_core.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -39,7 +47,7 @@ infinity\_api.utils module
 Module contents
 ---------------
 
-.. automodule:: infinity_api
+.. automodule:: infinity_core
    :members:
    :undoc-members:
    :show-inheritance:

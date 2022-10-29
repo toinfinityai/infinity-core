@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-import infinity_api.api as api
+import infinity_core.api as api
 
 
 def _construct_config_file(filename: str) -> Path:

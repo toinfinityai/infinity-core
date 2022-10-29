@@ -14,7 +14,7 @@ from urllib.parse import urlencode, urljoin
 import requests
 from requests.models import Response
 
-from infinity_api.data_structures import HeaderKind
+from infinity_core.data_structures import HeaderKind
 
 DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 

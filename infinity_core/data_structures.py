@@ -1,6 +1,6 @@
 """ Infinity API data structures.
 
-This module contains common or important data structures used in other `infinity-api` modules.
+This module contains common or important data structures used in other `infinity-core` modules.
 """
 
 from dataclasses import dataclass
@@ -50,11 +50,11 @@ class JobType(Enum):
 class CompletedJob:
     """A data structured encapsulating a completed API job request.
 
-    Attributes:
-        uid (str): Unique job ID.
-        generator (str): Name of the generator for the job.
-        params (:obj:`dict`): Job parameters associated with the completed job.
-        result_url (str, optional): URL containing completed job result data, if available.
+    Args:
+        uid: Unique job ID.
+        generator: Name of the generator for the job.
+        params: Job parameters associated with the completed job.
+        result_url: URL containing completed job result data, if available.
     """
 
     uid: str
@@ -78,11 +78,11 @@ class CompletedJob:
 class ValidCompletedJob:
     """A data structured encapsulating a valid completed API job request.
 
-    Attributes:
-        uid (str): Unique job ID.
-        generator (str): Name of the generator for the job.
-        params (:obj:`dict`): Job parameters associated with the completed job.
-        result_url (str): URL containing completed job result data.
+    Args:
+        uid: Unique job ID.
+        generator: Name of the generator for the job.
+        params: Job parameters associated with the completed job.
+        result_url: URL containing completed job result data.
     """
 
     uid: str

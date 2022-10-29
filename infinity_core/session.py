@@ -10,9 +10,9 @@ import functools
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import infinity_api.api as api
-from infinity_api.batch import Batch, submit_batch
-from infinity_api.data_structures import JobParams, JobType
+import infinity_core.api as api
+from infinity_core.batch import Batch, submit_batch
+from infinity_core.data_structures import JobParams, JobType
 
 
 class ParameterValidationError(Exception):
@@ -21,10 +21,16 @@ class ParameterValidationError(Exception):
 
 @dataclass(frozen=False)
 class Session:
-    """An encapsulation of a user session to interact with the Infinity API."""
+    """An encapsulation of a user session to interact with the Infinity API.
+
+    Args:
+        token: Use authentication token.
+        generator: Target generator for the session.
+        server: URL of the target API server.
+        batches: List of accumulated batch submitted during the session.
+    """
 
     token: str
-    name: str
     generator: str
     server: str = api.DEFAULT_SERVER
     batches: List[Batch] = field(default_factory=list)
