@@ -47,21 +47,6 @@ class JobType(Enum):
 
 
 @dataclass(frozen=True)
-class SubmittedJob:
-    """A data structure encapsulating a successful API job request.
-
-    Attributes:
-        uid (str): Unique job ID.
-        generator (str): Name of the generator for the job.
-        params (:obj:`dict`): Job parameters associated with the successful request.
-    """
-
-    uid: str
-    generator: str
-    params: Dict[str, Any]
-
-
-@dataclass(frozen=True)
 class CompletedJob:
     """A data structured encapsulating a completed API job request.
 
@@ -74,5 +59,22 @@ class CompletedJob:
 
     uid: str
     generator: str
-    params: Dict[str, Any]
+    params: JobParams
     result_url: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ValidCompletedJob:
+    """A data structured encapsulating a valid completed API job request.
+
+    Attributes:
+        uid (str): Unique job ID.
+        generator (str): Name of the generator for the job.
+        params (:obj:`dict`): Job parameters associated with the completed job.
+        result_url (str): URL containing completed job result data.
+    """
+
+    uid: str
+    generator: str
+    params: JobParams
+    result_url: str

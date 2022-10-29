@@ -7,6 +7,7 @@ track, and manipulate batches of synthetic data.
 
 import concurrent.futures
 import io
+import shutil
 import time
 import zipfile
 from dataclasses import dataclass
@@ -17,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 
 import infinity_api.api as api
-from infinity_api.data_structures import CompletedJob, JobParams, JobType
+from infinity_api.data_structures import CompletedJob, JobParams, JobType, ValidCompletedJob
 
 
 class BatchJobTypeError(Exception):
@@ -25,6 +26,10 @@ class BatchJobTypeError(Exception):
 
 
 class BatchRetrievalError(Exception):
+    pass
+
+
+class DownloadError(Exception):
     pass
 
 
@@ -47,9 +52,10 @@ def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server
     return jobs
 
 
-def _download_and_extract_zip(download_info: Tuple[str, Path]) -> None:
-    url, target_path = download_info
+def _download_and_extract_zip(download_info: Tuple[str, str, Path]) -> None:
+    url, _, target_path = download_info
     r = requests.get(url)
+    # TODO: Confirm this will overwrite by default.
     with zipfile.ZipFile(io.BytesIO(r.content)) as z:
         z.extractall(target_path)
 
@@ -183,7 +189,7 @@ class Batch:
 
     def get_valid_completed_jobs(
         self,
-    ) -> List[CompletedJob]:
+    ) -> List[ValidCompletedJob]:
         """Returns only valid completed jobs (with valid result URL).
 
         Returns:
@@ -191,9 +197,13 @@ class Batch:
             state such that, for example, a final output was not rendered. A "valid" job here
             means the final output is available.
         """
-        return [cj for cj in self.get_completed_jobs() if cj.result_url]
+        return [
+            ValidCompletedJob(uid=cj.uid, generator=cj.generator, params=cj.params, result_url=cj.result_url)
+            for cj in self.get_completed_jobs()
+            if cj.result_url is not None
+        ]
 
-    def await_completion(self, polling_interval: float = 10) -> List[CompletedJob]:
+    def await_completion(self, polling_interval: float = 10) -> List[ValidCompletedJob]:
         """Serially poll and wait for all jobs in the batch to complete (blocking).
 
         WARNING: This function will hang forever if a backend error leads to a hung job
@@ -235,13 +245,42 @@ class Batch:
                 be fully overwritten. If `False`, detected already downloaded jobs will not be
                 re-downloaded.
         """
-        # TODO Add logic to not download already downloaded jobs if present in `out_dir`.
         out_dir = Path(path)
-        downloadable_jobs = self.get_valid_completed_jobs()
-        download_info = [(j.result_url, out_dir / str(j.uid)) for j in downloadable_jobs]
+        if not overwrite:
+            if out_dir.exists():
+                downloaded_jids = {e.stem for e in out_dir.iterdir() if e.is_dir()}
+                downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.uid not in downloaded_jids]
+            else:
+                downloadable_jobs = self.get_valid_completed_jobs()
+        else:
+            downloadable_jobs = self.get_valid_completed_jobs()
 
+        download_info = [(j.result_url, j.uid, out_dir / str(j.uid)) for j in downloadable_jobs]
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(_download_and_extract_zip, download_info)
+            future_to_info = {executor.submit(_download_and_extract_zip, di): di for di in download_info}
+            failed_jobs = []
+            num_total_jobs = len(downloadable_jobs)
+            num_jobs_completed = 0
+            for future in concurrent.futures.as_completed(future_to_info.keys()):
+                _, jid, out_path = future_to_info[future]
+                try:
+                    _ = future.result()
+                except Exception:
+                    if out_dir.exists():
+                        try:
+                            shutil.rmtree(out_path)
+                        except Exception:
+                            pass
+                    failed_jobs.append(jid)
+                else:
+                    num_jobs_completed += 1
+                    # TODO: Overwrite previous line in stdout.
+                    print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})")
+
+        # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
+        raise DownloadError(
+            f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
+        )
 
 
 def submit_batch(
