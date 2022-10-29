@@ -62,6 +62,17 @@ class CompletedJob:
     params: JobParams
     result_url: Optional[str] = None
 
+    def try_into_valid_completed_job(self) -> Optional["ValidCompletedJob"]:
+        if self.result_url is not None:
+            return ValidCompletedJob(
+                uid=self.uid,
+                generator=self.generator,
+                params=self.params,
+                result_url=self.result_url,
+            )
+        else:
+            return None
+
 
 @dataclass(frozen=True)
 class ValidCompletedJob:
@@ -78,3 +89,15 @@ class ValidCompletedJob:
     generator: str
     params: JobParams
     result_url: str
+
+    @classmethod
+    def try_from_completed_job(cls, completed_job: CompletedJob) -> Optional["ValidCompletedJob"]:
+        if completed_job.result_url is not None:
+            return cls(
+                uid=completed_job.uid,
+                generator=completed_job.generator,
+                params=completed_job.params,
+                result_url=completed_job.result_url,
+            )
+        else:
+            return None
