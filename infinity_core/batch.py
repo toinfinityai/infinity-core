@@ -203,15 +203,16 @@ class Batch:
             if cj.result_url is not None
         ]
 
-    def await_completion(self, polling_interval: float = 10) -> List[ValidCompletedJob]:
+    def await_completion(self, polling_interval: int = 10, timeout: Optional[int] = None) -> List[ValidCompletedJob]:
         """Serially poll and wait for all jobs in the batch to complete (blocking).
 
         WARNING: This function will hang forever if a backend error leads to a hung job
-        (that never completes).
+        (that never completes) and no timeout is set.
 
         Args:
             polling_interval: Time interval to sleep (in seconds) between consecutive iterations
                 of polling. Defaults to 10 seconds.
+            timeout: Optional timeout in seconds.
 
         Returns:
             :obj:`list` of all :obj:`CompletedJobs` in batch.
@@ -225,6 +226,9 @@ class Batch:
         while num_jobs_remaining > 0:
             num_jobs_remaining = self.get_num_jobs_remaining()
             elapsed_time = int((datetime.now() - start_time).seconds)
+            if timeout is not None:
+                if elapsed_time > timeout:
+                    raise TimeoutError(f"Batch completion time exceeded timeout of {timeout} seconds")
             print(f"{num_jobs_remaining} remaining jobs [{elapsed_time:d} s]...\t\t\t", end="\r")
             time.sleep(polling_interval)
 
