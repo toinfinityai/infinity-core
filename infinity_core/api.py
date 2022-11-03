@@ -423,6 +423,12 @@ def post_batch(
     Returns:
         HTTP request response.
     """
+    if not isinstance(job_params, list):
+        raise TypeError(f"`job_params` must be a `list`, got {type(job_params)}")
+    if len(job_params) == 0:
+        raise ValueError("`job_params` is empty; no jobs to submit!")
+    if not all([isinstance(d, dict) for d in job_params]):
+        raise TypeError("Not all elements of `job_params` of type `dict`")
     job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
     json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
