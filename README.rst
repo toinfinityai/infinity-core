@@ -58,7 +58,7 @@ Using a `Session` (Basic)
 
     # Start a session with the Infinity API.
     token = "TOKEN"
-    sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
+    sesh = Session(token=token, generator="visionfit-v0.3.1")
     
     # Submit a request for three synthetic data videos.
     job_params = [{"camera_height": v} for v in [1.0, 1.5, 2.0]]
