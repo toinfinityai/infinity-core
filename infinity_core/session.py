@@ -6,7 +6,6 @@ activities after a session is initialized.
 """
 
 import datetime
-import functools
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -42,14 +41,26 @@ class Session:
         ).json()
 
     def _validate_params(self, user_params: JobParams) -> None:
+        ty_to_constructor = {
+            "str": str,
+            "int": int,
+            "float": float,
+            "bool": bool,
+            "uuid": str,
+        }
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
+        type_violation_list = list()
         constraint_violation_list = list()
         for uk, uv in user_params.items():
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
+            actual_ty = type(uv)
+            expected_ty = ty_to_constructor[pinfo[uk]["type"]]
+            if actual_ty is not expected_ty:
+                type_violation_list.append((uk, actual_ty, expected_ty))
             param_options = pinfo[uk]["options"]
             if "min" in param_options:
                 cv = param_options["min"]
@@ -65,9 +76,10 @@ class Session:
                     constraint_violation_list.append((uk, "choices", cv, uv))
 
         had_unsupported_parameter = False if unsupported_parameter_set == set() else True
+        violated_types = False if len(type_violation_list) == 0 else True
         violated_constraints = False if len(constraint_violation_list) == 0 else True
 
-        if not had_unsupported_parameter and not violated_constraints:
+        if not had_unsupported_parameter and not violated_types and not violated_constraints:
             return
         else:
             error_string = ""
@@ -75,6 +87,10 @@ class Session:
                 error_string += "\n\nUnsupported parameters:\n"
                 for p in unsupported_parameter_set:
                     error_string += f"`{p}`"
+            if violated_types:
+                error_string += "\n\nType violations:\n"
+                for p, a, e in type_violation_list:
+                    error_string += f"Input parameter `{p}` expected type `{e}`, got `{a}`\n"
             if violated_constraints:
                 error_string += "\n\nConstraint violations:\n"
                 for p, c, cv, pv in constraint_violation_list:
