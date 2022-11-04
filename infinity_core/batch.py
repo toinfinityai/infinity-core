@@ -259,7 +259,7 @@ class Batch:
         else:
             downloadable_jobs = self.get_valid_completed_jobs()
 
-        download_info = [(j.result_url, j.uid, out_dir / str(j.uid)) for j in downloadable_jobs]
+        download_info = [(j.result_url, j.uid, out_dir) for j in downloadable_jobs]
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_to_info = {executor.submit(_download_and_extract_zip, di): di for di in download_info}
             failed_jobs = []
@@ -278,14 +278,14 @@ class Batch:
                     failed_jobs.append(jid)
                 else:
                     num_jobs_completed += 1
-                    # TODO: Overwrite previous line in stdout.
-                    print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})")
+                    print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})...\t\t\t", end="\r")
 
         if num_jobs_completed != num_total_jobs:
             # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
             raise DownloadError(
                 f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
             )
+        print("\nDownload complete!")
 
 
 def submit_batch(
