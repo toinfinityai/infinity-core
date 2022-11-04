@@ -82,7 +82,8 @@ class Session:
 
         raise ParameterValidationError(error_string)
 
-    @functools.cached_property
+    # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
+    @property
     def parameter_info(self) -> Dict[str, Dict[str, Any]]:
         """dict: Parameters of the generator with metadata."""
         pdict = dict()
@@ -91,7 +92,8 @@ class Session:
 
         return pdict
 
-    @functools.cached_property
+    # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
+    @property
     def default_job(self) -> JobParams:
         """dict: Default values for parameters of the generator."""
         return {k: d["default_value"] for k, d in self.parameter_info.items()}
