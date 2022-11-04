@@ -253,6 +253,7 @@ class Batch:
         if not overwrite:
             if out_dir.exists():
                 downloaded_jids = {e.stem for e in out_dir.iterdir() if e.is_dir()}
+                print(f"Found {len(downloaded_jids)} jobs already downloaded")
                 downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.uid not in downloaded_jids]
             else:
                 downloadable_jobs = self.get_valid_completed_jobs()
