@@ -4,6 +4,8 @@ import pytest
 
 import infinity_core.api as api
 
+pytestmark = pytest.mark.needsapi
+
 
 def _construct_config_file(filename: str) -> Path:
     return Path(__file__).parent.absolute() / filename

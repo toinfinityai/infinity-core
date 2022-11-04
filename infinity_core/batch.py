@@ -281,10 +281,11 @@ class Batch:
                     # TODO: Overwrite previous line in stdout.
                     print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})")
 
-        # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
-        raise DownloadError(
-            f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
-        )
+        if num_jobs_completed != num_total_jobs:
+            # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
+            raise DownloadError(
+                f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
+            )
 
 
 def submit_batch(

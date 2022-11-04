@@ -34,9 +34,10 @@ profile = "black"
 [tool.pytest.ini_options]
 markers = [
   "integration: marks integration tests",
+  "needsapi: marks tests that need cloud API access",
   "apiget: marks tests that make API GET requests",
   "apipost: marks tests that make API POST requests",
-  "batchpost: marks testat that make batched API POST requests",
+  "batchpost: marks tests that make batched API POST requests",
 ]
 
 [build-system]
