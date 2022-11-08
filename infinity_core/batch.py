@@ -250,17 +250,26 @@ class Batch:
                 re-downloaded.
         """
         out_dir = Path(path)
+        batch_id_path = out_dir / "batch_id.txt"
         if not overwrite:
             if out_dir.exists():
+                with open(batch_id_path, "r") as f:
+                    previous_id = f.read()
+                if previous_id != self.uid:
+                    raise DownloadError(
+                        f"Attempt to download batch with id {self.uid} into existing folder for batch with id {previous_id}"
+                    )
                 downloaded_jids = {e.stem for e in out_dir.iterdir() if e.is_dir()}
-                print(f"Found {len(downloaded_jids)} jobs already downloaded")
                 downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.uid not in downloaded_jids]
+                print(f"Found {len(downloaded_jids)} jobs already downloaded")
             else:
                 downloadable_jobs = self.get_valid_completed_jobs()
         else:
             downloadable_jobs = self.get_valid_completed_jobs()
 
         download_info = [(j.result_url, j.uid, out_dir) for j in downloadable_jobs]
+        with open(batch_id_path, "w") as f:
+            f.write(f"{self.uid}")
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_to_info = {executor.submit(_download_and_extract_zip, di): di for di in download_info}
             failed_jobs = []

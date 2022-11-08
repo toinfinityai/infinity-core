@@ -41,12 +41,12 @@ class Session:
         ).json()
 
     def _validate_params(self, user_params: JobParams) -> None:
-        ty_to_constructor = {
+        ty_str_to_ty_python = {
             "str": str,
             "int": int,
             "float": float,
             "bool": bool,
-            "uuid": str,
+            "uuid": Optional[str],
         }
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
@@ -57,10 +57,10 @@ class Session:
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
-            actual_ty = type(uv)
-            expected_ty = ty_to_constructor[pinfo[uk]["type"]]
-            if actual_ty is not expected_ty:
-                type_violation_list.append((uk, actual_ty, expected_ty))
+            expected_ty = ty_str_to_ty_python[pinfo[uk]["type"]]
+            # TODO: See if we can remove this type ignore.
+            if not isinstance(uv, expected_ty):  # type: ignore
+                type_violation_list.append((uk, type(uv), expected_ty))
             param_options = pinfo[uk]["options"]
             if "min" in param_options:
                 cv = param_options["min"]
