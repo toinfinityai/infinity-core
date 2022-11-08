@@ -271,6 +271,7 @@ class Batch:
             downloadable_jobs = self.get_valid_completed_jobs()
 
         download_info = [(j.result_url, j.uid, out_dir) for j in downloadable_jobs]
+        out_dir.mkdir(parents=True, exist_ok=True)
         with open(batch_id_path, "w+") as f:
             f.write(f"{self.uid}")
         with concurrent.futures.ThreadPoolExecutor() as executor:
