@@ -255,7 +255,7 @@ class Batch:
             if out_dir.exists():
                 try:
                     with open(batch_id_path, "r") as f:
-                        previous_id = f.read()
+                        previous_id = f.read().strip()
                     if previous_id != self.uid:
                         raise DownloadError(
                             f"Attempt to download batch with id {self.uid} into existing folder for batch with id {previous_id}"
