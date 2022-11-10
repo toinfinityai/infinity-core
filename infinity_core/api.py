@@ -8,13 +8,13 @@ interact directly with the REST API.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode, urljoin
 
 import requests
 from requests.models import Response
 
-from infinity_api.data_structures import HeaderKind
+from infinity_core.data_structures import HeaderKind
 
 DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 
@@ -156,29 +156,6 @@ def get_single_preview_job_data(token: str, preview_id: str, server: str = DEFAU
     return requests.get(url=url, headers=headers)
 
 
-def get_batch_preview_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get data for a given batch of previews associated with the given token.
-
-    Args:
-        token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of previews.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
-    query_parameters = {"batch_id": batch_id}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/job_previews/",
-        headers=headers_set,
-        query_parameters=query_parameters,
-    )
-    return requests.get(url=url, headers=headers)
-
-
 def get_all_standard_job_data(token: str, server: str = DEFAULT_SERVER) -> Response:
     """Get data for all standard jobs associated with the given token.
 
@@ -218,25 +195,81 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
     return requests.get(url=url, headers=headers)
 
 
-def get_batch_standard_job_data(token: str, batch_id: str, server: str = DEFAULT_SERVER) -> Response:
-    """Get data for a given batch of standard jobs associated with the given token.
+def get_batch_list(
+    token: str, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None, server: str = DEFAULT_SERVER
+) -> Response:
+    """Get a list of batches associated with the given token over some time range.
 
     Args:
         token: User authentication token.
-        batch_id: Unique ID associated with a previously run batch of jobs.
+        start_time: Optional start time for query.
+        end_time: Optional end time for query.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+    if end_time is not None and start_time is not None:
+        if end_time < start_time:
+            raise ValueError(f"End time ({end_time}) before start time ({start_time}) for usage query")
+    query_parameters = dict()
+    if start_time is not None:
+        if start_time.tzinfo is None:
+            start_time = start_time.astimezone()
+        query_parameters["start_time"] = start_time.isoformat()
+    if end_time is not None:
+        if end_time.tzinfo is None:
+            end_time = end_time.astimezone()
+        query_parameters["end_time"] = end_time.isoformat()
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON]),
+        query_parameters=query_parameters,
+    )
+    return requests.get(url=url, headers=headers)
+
+
+def get_batch_data(token: str, batch_id: str, server: str) -> Response:
+    """Get detailed information on a previously submitted batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously submitted batch.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+    """
+
+    headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint=f"api/batch/{batch_id}/",
+        headers=headers_set,
+    )
+    return requests.get(url=url, headers=headers)
+
+
+def get_batch_summary_data(token: str, batch_id: str, server: str) -> Response:
+    """Get detailed information on a previously submitted batch.
+
+    Args:
+        token: User authentication token.
+        batch_id: Unique ID associated with a previously submitted batch.
         server: Base server URL.
 
     Returns:
         HTTP request response.
     """
     headers_set = set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON])
-    query_parameters = {"batch_id": batch_id}
     url, headers = build_request(
         token=token,
         server=server,
-        endpoint="api/job_runs/",
+        endpoint=f"api/batch/summary/{batch_id}/",
         headers=headers_set,
-        query_parameters=query_parameters,
     )
     return requests.get(url=url, headers=headers)
 
@@ -374,41 +407,34 @@ def get_usage_last_n_days(
     return get_usage_datetime_range(token=token, server=server, start_time=start_time, end_time=end_time)
 
 
-def post_preview(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
-    """Post a single preview request to the Infinity API.
+def post_batch(
+    token: str, generator: str, name: str, job_params: List[Dict[str, Any]], is_preview: bool, server: str
+) -> Response:
+    """Post a batch to the Infinity API.
 
     Args:
         token: User authentication token.
-        json_data: Dictionary containing the preview job data.
+        generator: Unique name of the target generator.
+        name: Descriptive name for the batch.
+        job_params: List of dictionares containing job parameters for all jobs of the batch.
+        is_preview: Flag indicating the batch consists of preview job types.
         server: Base server URL.
 
     Returns:
         HTTP request response.
     """
+    if not isinstance(job_params, list):
+        raise TypeError(f"`job_params` must be a `list`, got {type(job_params)}")
+    if len(job_params) == 0:
+        raise ValueError("`job_params` is empty; no jobs to submit!")
+    if not all([isinstance(d, dict) for d in job_params]):
+        raise TypeError("Not all elements of `job_params` of type `dict`")
+    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
+    json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
         token=token,
         server=server,
-        endpoint="api/jobs/preview/",
-        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
-    )
-    return requests.post(url=url, headers=headers, json=json_data)
-
-
-def post_standard_job(token: str, json_data: Dict[str, Any], server: str = DEFAULT_SERVER) -> Response:
-    """Post a single standard job request to the Infinity API.
-
-    Args:
-        token: User authentication token.
-        json_data: Dictionary containing the job data.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-    """
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/jobs/run/",
+        endpoint="api/batch/",
         headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
     )
     return requests.post(url=url, headers=headers, json=json_data)

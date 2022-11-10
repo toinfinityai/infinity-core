@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Infinity API's documentation!
-========================================
+Welcome to the documentation for the Infinity Core API!
+=======================================================
 
 .. toctree::
    :maxdepth: 2

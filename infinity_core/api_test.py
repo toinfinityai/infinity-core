@@ -1,7 +1,7 @@
 import pytest
 
-import infinity_api.api as api
-from infinity_api.data_structures import HeaderKind
+import infinity_core.api as api
+from infinity_core.data_structures import HeaderKind
 
 
 class TestBuildRequest:

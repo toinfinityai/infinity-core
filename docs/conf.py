@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Infinity API'
+project = 'Infinity Core API'
 copyright = '2022, Infinity AI, Inc.'
 author = 'Daniel Hensley'
 release = '0.1.0'

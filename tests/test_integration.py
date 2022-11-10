@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-import infinity_api.api as api
-import infinity_api.batch as ba
-from infinity_api.data_structures import JobType
+import infinity_core.api as api
+
+pytestmark = pytest.mark.needsapi
 
 
 def _construct_config_file(filename: str) -> Path:
@@ -65,7 +65,7 @@ class TestApiGetRequestIntegration:
         assert r.ok
 
     def test_get_batch_preview_job_data(self, token: str, preview_batch_id: str, server: str) -> None:
-        r = api.get_batch_preview_job_data(token=token, batch_id=preview_batch_id, server=server)
+        r = api.get_batch_data(token=token, batch_id=preview_batch_id, server=server)
 
         assert r.ok
 
@@ -80,7 +80,7 @@ class TestApiGetRequestIntegration:
         assert r.ok
 
     def test_get_batch_standard_job_data(self, token: str, standard_batch_id: str, server: str) -> None:
-        r = api.get_batch_standard_job_data(token=token, batch_id=standard_batch_id, server=server)
+        r = api.get_batch_data(token=token, batch_id=standard_batch_id, server=server)
 
         assert r.ok
 
@@ -113,44 +113,53 @@ class TestApiGetRequestIntegration:
 @pytest.mark.integration
 @pytest.mark.apipost
 class TestApiPostRequestIntegration:
-    def test_post_preview(self, token: str, generator_name: str, server: str) -> None:
-        json_data = {"name": generator_name, "param_values": {}}
-        r = api.post_preview(token=token, json_data=json_data, server=server)
+    def test_post_batch_preview(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}], is_preview=True, server=server
+        )
 
         assert r.ok
 
-    def test_post_standard_job(self, token: str, generator_name: str, server: str) -> None:
-        json_data = {"name": generator_name, "param_values": {}}
-        r = api.post_standard_job(token=token, json_data=json_data, server=server)
+    def test_post_batch_standard(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}], is_preview=False, server=server
+        )
+
+        assert r.ok
+
+    def test_post_multi_job_batch(self, token: str, generator_name: str, server: str) -> None:
+        r = api.post_batch(
+            token=token, generator=generator_name, name="test", job_params=[{}, {}], is_preview=True, server=server
+        )
 
         assert r.ok
 
 
-@pytest.mark.integration
-@pytest.mark.batchpost
-class TestBatchSubmissionIntegration:
-    def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
-        batch, _ = ba.submit_batch_to_api(
-            token=token,
-            generator=generator_name,
-            job_type=JobType.PREVIEW,
-            job_params=[dict()],
-            output_dir="tmp",
-            server=server,
-            write_to_file=False,
-        )
+# @pytest.mark.integration
+# @pytest.mark.batchpost
+# class TestBatchSubmissionIntegration:
+#     def test_preview_batch(self, token: str, generator_name: str, server: str) -> None:
+#         batch, _ = ba.submit_batch_to_api(
+#             token=token,
+#             generator=generator_name,
+#             job_type=JobType.PREVIEW,
+#             job_params=[dict()],
+#             output_dir="tmp",
+#             server=server,
+#             write_to_file=False,
+#         )
 
-        assert batch.num_successfully_submitted_jobs == 1
+#         assert batch.num_successfully_submitted_jobs == 1
 
-    def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
-        batch, _ = ba.submit_batch_to_api(
-            token=token,
-            generator=generator_name,
-            job_type=JobType.STANDARD,
-            job_params=[dict()],
-            output_dir="tmp",
-            server=server,
-            write_to_file=False,
-        )
+#     def test_standard_batch(self, token: str, generator_name: str, server: str) -> None:
+#         batch, _ = ba.submit_batch_to_api(
+#             token=token,
+#             generator=generator_name,
+#             job_type=JobType.STANDARD,
+#             job_params=[dict()],
+#             output_dir="tmp",
+#             server=server,
+#             write_to_file=False,
+#         )
 
-        assert batch.num_successfully_submitted_jobs == 1
+#         assert batch.num_successfully_submitted_jobs == 1
