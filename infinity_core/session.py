@@ -51,13 +51,13 @@ class Session:
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
-        #type_violation_list = list()
+        # type_violation_list = list()
         constraint_violation_list = list()
         for uk, uv in user_params.items():
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
-            #expected_ty = ty_str_to_ty_python[pinfo[uk]["type"]]
+            # expected_ty = ty_str_to_ty_python[pinfo[uk]["type"]]
             # TODO: See if we can remove this type ignore.
             # if not isinstance(uv, expected_ty):  # type: ignore
             #     type_violation_list.append((uk, type(uv), expected_ty))
@@ -76,10 +76,10 @@ class Session:
                     constraint_violation_list.append((uk, "choices", cv, uv))
 
         had_unsupported_parameter = False if unsupported_parameter_set == set() else True
-        #violated_types = False if len(type_violation_list) == 0 else True
+        # violated_types = False if len(type_violation_list) == 0 else True
         violated_constraints = False if len(constraint_violation_list) == 0 else True
 
-        if not had_unsupported_parameter and not violated_constraints: #violated_types and not violated_constraints:
+        if not had_unsupported_parameter and not violated_constraints:  # violated_types and not violated_constraints:
             return
         else:
             error_string = ""

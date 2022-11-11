@@ -268,7 +268,7 @@ def get_batch_summary_data(token: str, batch_id: str, server: str) -> Response:
     url, headers = build_request(
         token=token,
         server=server,
-        endpoint=f"api/batch/summary/{batch_id}/",
+        endpoint=f"api/batch/{batch_id}/summary/",
         headers=headers_set,
     )
     return requests.get(url=url, headers=headers)
