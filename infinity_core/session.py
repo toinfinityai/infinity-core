@@ -114,7 +114,7 @@ class Session:
         """dict: Default values for parameters of the generator."""
         return {k: d["default_value"] for k, d in self.parameter_info.items()}
 
-    def submit(self, job_params: List[JobParams], is_preview: bool = True, batch_name: Optional[str] = None) -> Batch:
+    def submit(self, job_params: List[JobParams], is_preview: bool = False, batch_name: Optional[str] = None) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
@@ -128,6 +128,14 @@ class Session:
         Raises:
             ParameterValidationError: If supplied parameters are not supported by the generator.
         """
+        if is_preview:
+            previews_allowed = False
+            if "options" in self._generator_info:
+                if "preview" in self._generator_info["options"]:
+                    if self._generator_info["options"]["preview"] is True:
+                        previews_allowed = True
+            if not previews_allowed:
+                raise ValueError(f"Previews are not supported for `{self.generator}`, submit with `is_preview=False`")
         complete_params = []
         for jp in job_params:
             # TODO: Or do we just fully want to defer to the backend's validation?
