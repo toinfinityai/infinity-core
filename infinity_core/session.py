@@ -135,7 +135,7 @@ class Session:
                     if self._generator_info["options"]["preview"] is True:
                         previews_allowed = True
             if not previews_allowed:
-                raise ValueError(f"Previews are not supported for `{self.generator}`, submit with `is_preview=False`")
+                raise ValueError(f"Previews are not supported for `{self.generator}`")
         complete_params = []
         for jp in job_params:
             # TODO: Or do we just fully want to defer to the backend's validation?
