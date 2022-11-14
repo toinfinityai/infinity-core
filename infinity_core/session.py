@@ -40,7 +40,7 @@ class Session:
             token=self.token, generator_name=self.generator, server=self.server
         ).json()
 
-    def _validate_params(self, user_params: JobParams) -> None:
+    def _validate_params(self, user_params: JobParams) -> Optional[str]:
         # ty_str_to_ty_python = {
         #     "str": str,
         #     "int": int,
@@ -80,7 +80,7 @@ class Session:
         violated_constraints = False if len(constraint_violation_list) == 0 else True
 
         if not had_unsupported_parameter and not violated_constraints:  # violated_types and not violated_constraints:
-            return
+            return None
         else:
             error_string = ""
             if had_unsupported_parameter:
@@ -95,8 +95,18 @@ class Session:
                 error_string += "\n\nConstraint violations:\n"
                 for p, c, cv, pv in constraint_violation_list:
                     error_string += f"Input parameter `{p}` violated constraint `{c}` ({cv}) with value {pv}\n"
+            return error_string
 
-        raise ParameterValidationError(error_string)
+    def validate_job_params(self, job_params: List[JobParams]) -> List[Optional[str]]:
+        """Check if a list of job parameters is valid.
+
+        Args:
+            job_params: A :obj:`list` of :obj:`dict` containing job parameters for a potential batch.
+
+        Returns:
+            A list of validation errors (one per job param dict). This will be all `None`s if everything is valid.
+        """
+        return [self._validate_params(jp) for jp in job_params]
 
     # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
     @property
@@ -136,11 +146,13 @@ class Session:
                         previews_allowed = True
             if not previews_allowed:
                 raise ValueError(f"Previews are not supported for `{self.generator}`")
-        complete_params = []
-        for jp in job_params:
-            # TODO: Or do we just fully want to defer to the backend's validation?
-            self._validate_params(jp)
-            complete_params.append({**self.default_job, **jp})
+        errors = self.validate_job_params(job_params=job_params)
+        if not all([v is None for v in errors]):
+            raise ParameterValidationError(errors)
+        else:
+            complete_params = []
+            for jp in job_params:
+                complete_params.append({**self.default_job, **jp})
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
@@ -154,24 +166,6 @@ class Session:
         )
         self.batches.append(batch)
         return batch
-
-    # def rerun_batch(
-    #     self, batch: ba.Batch, overrides: JobParams, preview: bool = True, batch_name: Optional[str] = None
-    # ) -> ba.Batch:
-    #     # TODO: Will this work for SenseFit et alia in addition to VisionFit?
-    #     # TODO: If not, let's standardize how `state` is expressed so that this will work
-    #     # TODO: automatically for all generators and their jobs.
-    #     self._validate_params(overrides)
-    #     job_params = []
-    #     for j in batch.jobs:
-    #         params = j.params
-    #         if "state" in self.parameter_info.keys():
-    #             params["state"] = j.uid
-    #         # TODO: Confirm this does the right override order of operations.
-    #         params = {**self.default_job, **params, **overrides}
-    #         job_params.append(params)
-
-    #     return self.submit(job_params=job_params, preview=preview, batch_name=batch_name)
 
     def batch_from_api(self, batch_id: str) -> Batch:
         return Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
