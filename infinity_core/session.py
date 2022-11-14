@@ -6,6 +6,7 @@ activities after a session is initialized.
 """
 
 import datetime
+import random
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -124,13 +125,41 @@ class Session:
         """dict: Default values for parameters of the generator."""
         return {k: d["default_value"] for k, d in self.parameter_info.items()}
 
-    def submit(self, job_params: List[JobParams], is_preview: bool = False, batch_name: Optional[str] = None) -> Batch:
+    def random_job(self) -> JobParams:
+        job_params: JobParams = dict()
+        for k, v in self.parameter_info.items():
+            if "options" in v.keys():
+                if "choices" in v["options"]:
+                    job_params[k] = random.choice(v["options"]["choices"])
+                elif "min" in v["options"] and "max" in v["options"]:
+                    mn, mx = v["options"]["min"], v["options"]["max"]
+                    if v["type"] == "int":
+                        job_params[k] = random.randint(mn, mx)
+                    elif v["type"] == "float":
+                        job_params[k] = random.uniform(mn, mx)
+                    else:
+                        job_params[k] = v["default_value"]
+                else:
+                    job_params[k] = v["default_value"]
+            else:
+                job_params[k] = v["default_value"]
+
+        return job_params
+
+    def submit(
+        self,
+        job_params: List[JobParams],
+        is_preview: bool = False,
+        random_sample: bool = True,
+        batch_name: Optional[str] = None,
+    ) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
 
         Args:
             job_params: A :obj:`list` of :obj:`dict` containing job parameters for the batch.
             is_preview: Flag to indicate a preview is desired instead of a full job (e.g., video).
-            description: Optional descriptive for the submission.
+            random_sample: Flag indicating whether to poplate unspecified params with random samples or default values.
+            batch_name: Optional descriptive for the submission.
 
         Returns:
             The created :obj:`Batch` instance.
@@ -146,13 +175,23 @@ class Session:
                         previews_allowed = True
             if not previews_allowed:
                 raise ValueError(f"Previews are not supported for `{self.generator}`")
-        errors = self.validate_job_params(job_params=job_params)
+
+        # Check just the user-supplied errors.
+        user_input_errors = self.validate_job_params(job_params=job_params)
+        if not all([v is None for v in user_input_errors]):
+            raise ParameterValidationError(user_input_errors)
+
+        complete_params = []
+        for jp in job_params:
+            if random_sample:
+                complete_params.append({**self.random_job(), **jp})
+            else:
+                complete_params.append({**self.default_job, **jp})
+
+        # Check total populated errors as well. TODO: Should we do this?
+        errors = self.validate_job_params(job_params=complete_params)
         if not all([v is None for v in errors]):
             raise ParameterValidationError(errors)
-        else:
-            complete_params = []
-            for jp in job_params:
-                complete_params.append({**self.default_job, **jp})
 
         # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
