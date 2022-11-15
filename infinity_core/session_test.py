@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 import pytest
 
 import infinity_core.api as api
@@ -41,26 +43,26 @@ def session() -> Session:
 
 
 class TestSessionJobParamValidation:
-    def test_valid_job_params(self, session):
-        job_params = [{"param1": 2}, {"param2": 1.2}, {"param3": "CHOICE_2"}]
+    def test_valid_job_params(self, session: Session) -> None:
+        job_params: List[Dict[str, Any]] = [{"param1": 2}, {"param2": 1.2}, {"param3": "CHOICE_2"}]
         assert all([v is None for v in session.validate_job_params(job_params=job_params)])
 
-    def test_invalid_type(self, session):
-        job_params = [{"param1": "2"}, {"param2": 2}]
+    def test_invalid_type(self, session: Session) -> None:
+        job_params: List[Dict[str, Any]] = [{"param1": "2"}, {"param2": 2}]
         errors = session.validate_job_params(job_params=job_params)
         assert all([e is not None for e in errors])
 
-    def test_invalid_parameter(self, session):
-        job_params = [{"param4": 1.5}]
+    def test_invalid_parameter(self, session: Session) -> None:
+        job_params: List[Dict[str, Any]] = [{"param4": 1.5}]
         errors = session.validate_job_params(job_params=job_params)
         assert errors[0] is not None
 
-    def test_out_of_range_parameter(self, session):
-        job_params = [{"param1": 10}, {"param2": -100.0}]
+    def test_out_of_range_parameter(self, session: Session) -> None:
+        job_params: List[Dict[str, Any]] = [{"param1": 10}, {"param2": -100.0}]
         errors = session.validate_job_params(job_params=job_params)
         assert all([e is not None for e in errors])
 
-    def test_out_of_choice_set(self, session):
+    def test_out_of_choice_set(self, session: Session) -> None:
         job_params = [{"param3": "CHOICE_3"}]
         errors = session.validate_job_params(job_params=job_params)
         assert errors[0] is not None
