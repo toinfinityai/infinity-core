@@ -21,6 +21,10 @@ class TestBatch:
     def test_job_ids_property(self, batch: Batch) -> None:
         assert set(batch.job_ids) == {"1", "2"}
 
+    def test_job_params_property(self, batch: Batch) -> None:
+        job_params = batch.job_params
+        assert len(job_params) == 2
+
     def test_correct_num_successful_jobs(self, batch: Batch) -> None:
         assert batch.num_jobs == 2
 
