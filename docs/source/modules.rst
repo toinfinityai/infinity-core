@@ -1,3 +1,6 @@
+Infinity Core API
+=================
+
 .. toctree::
    :maxdepth: 4
 

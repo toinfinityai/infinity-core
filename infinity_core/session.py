@@ -19,6 +19,7 @@ class ParameterValidationError(Exception):
     pass
 
 
+# TODO: Figure out how to get Sphinx to not document `_generator_info`.
 @dataclass(frozen=False)
 class Session:
     """An encapsulation of a user session to interact with the Infinity API.
@@ -104,17 +105,17 @@ class Session:
         """Check if a list of job parameters is valid.
 
         Args:
-            job_params: A :obj:`list` of :obj:`dict` containing job parameters for a potential batch.
+            job_params: A :obj:`list` of :obj:`dict`\s containing job parameters for the batch.
 
         Returns:
-            A list of validation errors (one per job param dict). This will be all `None`s if everything is valid.
+            A list of validation errors (one per job param dict). Values will all be `None` if everything is valid.
         """
         return [self._validate_params(jp) for jp in job_params]
 
     # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
     @property
     def parameter_info(self) -> Dict[str, Dict[str, Any]]:
-        """dict: Parameters of the generator with metadata."""
+        """`dict`: Parameters of the generator with metadata."""
         pdict = dict()
         for p in self._generator_info["params"]:
             pdict[p["name"]] = {"type": p["type"], "default_value": p["default_value"], "options": p["options"]}
@@ -124,7 +125,7 @@ class Session:
     # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
     @property
     def default_job(self) -> JobParams:
-        """dict: Default values for parameters of the generator."""
+        """:obj:`JobParams`: Default values for parameters of the generator."""
         return {k: d["default_value"] for k, d in self.parameter_info.items()}
 
     def random_job(self) -> JobParams:
@@ -135,7 +136,7 @@ class Session:
         any parameters without these properties, the default value will be used.
 
         Returns:
-            A dictionary containing the randomly sampled parameters.
+            :obj:`JobParams` containing the randomly sampled parameters.
         """
         job_params: JobParams = dict()
         for k, v in self.parameter_info.items():
@@ -235,7 +236,7 @@ class Session:
             n_days: Number of days looking back to gather submitted batches.
 
         Returns:
-            List containing batches and their metadata.
+            A :obj:`list` containing batches and their metadata.
         """
         end_time = datetime.datetime.now().astimezone()
         start_time = end_time - datetime.timedelta(days=n_days)
@@ -254,7 +255,7 @@ class Session:
             n_days: Number of days looking back to gather usage stats for.
 
         Returns:
-            Dictionary containing usage stats by generator.
+            A :obj:`dict` containing usage stats by generator.
 
         Raises:
             HTTPError: When the API query returns with an error status code.

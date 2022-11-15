@@ -171,7 +171,7 @@ class Batch:
         """Returns a list of completed batch jobs.
 
         Returns:
-            :obj:`list` of :obj:`CompletedJob` A list of currently completed batch jobs.
+            A :obj:`list` of currently completed :obj:`Batch` :obj:`CompletedJobs`\s.
         """
         data = self.get_batch_summary_data().json()
 
@@ -193,9 +193,9 @@ class Batch:
         """Returns only valid completed jobs (with valid result URL).
 
         Returns:
-            A list of valid completed jobs. A job may complete with an error or otherwise invalid
-            state such that, for example, a final output was not rendered. A "valid" job here
-            means the final output is available.
+            A :obj:`list` of currently completed and valid :obj:`ValidCompletedJob`\s. A job may
+            complete with an error or otherwise invalid state such that, for example, a final
+            output was not rendered. A "valid" job here means the final output is available.
         """
         return [
             ValidCompletedJob(uid=cj.uid, generator=cj.generator, params=cj.params, result_url=cj.result_url)
@@ -206,7 +206,7 @@ class Batch:
     def await_completion(self, polling_interval: int = 10, timeout: Optional[int] = None) -> List[ValidCompletedJob]:
         """Serially poll and wait for all jobs in the batch to complete (blocking).
 
-        WARNING: This function will hang forever if a backend error leads to a hung job
+        **WARNING**: This function will hang forever if a backend error leads to a hung job
         (that never completes) and no timeout is set.
 
         Args:
@@ -215,7 +215,7 @@ class Batch:
             timeout: Optional timeout in seconds.
 
         Returns:
-            :obj:`list` of all :obj:`CompletedJobs` in batch.
+            :obj:`list` of all :obj:`CompletedJob`\s in batch.
         """
         num_jobs = len(self.jobs)
         if num_jobs == 0:
@@ -321,7 +321,7 @@ def submit_batch(
         server: URL of the target API server.
 
     Returns:
-        :obj:`Batch` instance from successful API submission.
+        A :obj:`Batch` instance from successful API submission.
 
     Raises:
         ValueError: If `token` or `generator` is empty.
