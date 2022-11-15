@@ -1,10 +1,10 @@
 """ Infinity AI synthetic data REST API wrapper.
 
 This module provides lightweight Python wrapping of the Infinity AI API for synthetic data
-generation related functionality. Use this module to directly interact with the Infinity API or
-to build higher level abstractions for interfacing with the Infinity API. For example, the `batch`
-module provides a higher level abstraction for batches of synthetic data and uses this module to
-interact directly with the REST API.
+generation. Use this module to directly interact with the Infinity API or to build higher level
+abstractions for interfacing with the Infinity API. For example, the `batch` module provides a
+higher level abstraction for batches of synthetic data and uses this module to interact directly
+with the REST API.
 """
 
 from datetime import datetime, timedelta

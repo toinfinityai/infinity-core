@@ -1,8 +1,8 @@
 """ Infinity AI Session API for synthetic data generation.
 
 This module provides a Session-style API to wrap interaction with the Infinity AI REST API. The
-Session API abstracts away details of user authentication and certain configuration for all
-activities after a session is initialized.
+Session API abstracts away details of user authentication and enables ergonomics in areas such as
+parameter validation and job parameter construction once a session is initialized.
 """
 
 import datetime
@@ -128,6 +128,15 @@ class Session:
         return {k: d["default_value"] for k, d in self.parameter_info.items()}
 
     def random_job(self) -> JobParams:
+        """Generate job parameters using uniform random sampling.
+
+        This function will draw parameter values from a uniform distribution for all job parameters
+        associated with a `min` and `max` constraint value or with a finite set of `choices`. For
+        any parameters without these properties, the default value will be used.
+
+        Returns:
+            A dictionary containing the randomly sampled parameters.
+        """
         job_params: JobParams = dict()
         for k, v in self.parameter_info.items():
             if "options" in v.keys():
@@ -209,9 +218,25 @@ class Session:
         return batch
 
     def batch_from_api(self, batch_id: str) -> Batch:
+        """Reconstruct a previously submitted batch by unique ID.
+
+        Args:
+            batch_id: Unique batch ID of the target batch.
+
+        Returns:
+            A :obj:`Batch` instance for the target batch submission.
+        """
         return Batch.from_api(token=self.token, batch_id=batch_id, server=self.server)
 
     def get_batches_last_n_days(self, n_days: int) -> List[Dict[str, Any]]:
+        """Query the API for a list of batches submitted in the last N days.
+
+        Args:
+            n_days: Number of days looking back to gather submitted batches.
+
+        Returns:
+            List containing batches and their metadata.
+        """
         end_time = datetime.datetime.now().astimezone()
         start_time = end_time - datetime.timedelta(days=n_days)
         r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
@@ -223,7 +248,7 @@ class Session:
         return data
 
     def get_usage_stats_last_n_days(self, n_days: int) -> Dict[str, Any]:
-        """Query API for usage stats over the last N days.
+        """Query the API for usage stats over the last N days.
 
         Args:
             n_days: Number of days looking back to gather usage stats for.

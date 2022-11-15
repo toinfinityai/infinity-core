@@ -54,6 +54,7 @@ Using a `Session` (Basic)
 
 .. code-block:: python
 
+    from pprint import pprint
     from infinity_core.session import Session
 
     # Start a session with the Infinity API.
@@ -64,11 +65,18 @@ Using a `Session` (Basic)
     job_params = [{"camera_height": v} for v in [1.0, 1.5, 2.0]]
     videos = sesh.submit(job_params=job_params)
     
-    # Manually check if they are done yet.
-    print(f"Completed yet? Answer: {videos.num_remaining_jobs == 0)})
+    # Check and see if the batch is done yet.
+    num_jobs_remaining = videos.get_num_jobs_remaining()
+    print(f"Finished yet?: {'no' if num_jobs_remaining > 0 else 'yes'}")
     
-    # Manually block until they are all done.
-    videos.await_completion()
+    # Block until generation is complete. If you want to carry on with coding and/or
+    # submitting many batches before awaiting, simply refrain from calling
+    # `await_completion` until ready, or spot check with `get_num_jobs_remaining` as above.
+    completed_jobs = videos.await_completion()
+
+    # At any point, you can manually ask for the currently completed jobs:
+    completed_jobs = videos.get_valid_completed_jobs()
+    pprint(completed_jobs)
     
     # Download the results.
     videos.download(path="tmp/three_camera_height_sweep_videos")
@@ -84,7 +92,7 @@ Using a `Session` (Advanced)
     token = "TOKEN"
     sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
     
-    # Create a big batch with specific properties.
+    # Create a big new batch of job parameters with specific properties.
     import numpy as np
     job_params = []
     for _ in range(100):
@@ -98,44 +106,38 @@ Using a `Session` (Advanced)
             "image_width": 256,
             "image_height": 256,
         })
-        
-    # Analyze job params before submission using `pandas` DataFrames.
-    from pandas import DataFrame
-    df = DataFrame.from_records(job_params)
-    # ... do stuff like filter/modify/add to the dataframe ...
-    job_params_final = df.to_dict("records")
-    # You can manually check/validate your job params before trying to submit:
-    try:
-        sesh.validate(job_params=job_params_final)
-    except ValidationError as e:
-        print("Validation errors: {e}")
-    
-    # Submit to generate synthetic data.
-    previews_batch = sesh.submit(name="app1", job_params=job_params_final, preview=True)
-    print(f"Submitted batch ID: {batch.uid}) # Print the batch ID.
-    batch.await_completion()
-    batch.download(path="tmp/uppercut_right_custom1_previews")
-    
-    # Next week... come back and pick up where you left off:
-    sesh = Session(token=token, name="demo", generator="visionfit-v0.3.1")
-    # Provide batch ID (from local history/notes or by querying the API).
-    old_uppercut_batch = sesh.batch_from_api(batch_id="UPPERCUT_BATCH_ID")
-    # Review the jobs with a `DataFrame` UX.
-    df_uppercut = DataFrame.from_records(old_uppercut_batch.job_params)
-    # ... do stuff like filter/modify/add to the dataframe ...
-    updated_job_params = df_uppercut.to_dict("records")
-    # Grab another batch:
-    old_pushup_batch = sesh.batch_from_api(batch_id="PUSHUP_BATCH_ID")
-    df_pushup = DataFrame.from_records(old_pushup_batch.job_params)
-    # ... do stuff like filter/modify/add to the dataframe ...
-    # Merge the updated uppercut and pushup jobs into a single list of jobs.
-    merged_df = pandas.concat([df_uppercut, df_pushup])
-    final_job_params = merged_df.to_dict("records")
 
+    # Check the validity of your batch of jobs before submission. Errors can be addressed
+    # before attempting to submit.
+    errors = sesh.validate_job_params(job_params=job_params)
+    assert all([e is None for e in errors])
+        
+    # Analyze and update job params before submission using `pandas` DataFrames.
+    from pandas import DataFrame
+    new_df = DataFrame.from_records(job_params)
+
+    # Grab jobs from an old batch submitted last week
+    old_uppercut_batch = sesh.batch_from_api(batch_id="UPPERCUT_BATCH_ID")
+
+    # Update the old job params to be higher resolution
+    old_job_params = old_uppercut_batch.job_params
+    for jp in old_job_params:
+        jp["image_height"] = 512
+        jp["image_width"] = 512
+    old_df = DataFrame.from_records(old_job_params)
+
+    # Filter out some jobs based on various criteria using the familiar DF UX.
+    # ...
+
+    # Merge our fresh params with the updated older params to make our final new batch.
+    from pandas import concat
+    merged_df = concat([new_df, old_df]
+    final_job_params = merged_df.to_dict("records")
+    
     # Submit the updated and combined new batch.
     videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, preview=False)
     videos_batch.await_completion()
-    videos_batch.download(path="tmp/updated_and_merged_rerun")
+    videos_batch.download(path="tmp/merged_new_and_old_uppercut_batch")
     
 Using a `Session` (API Utilities)
 *********************************
@@ -164,7 +166,7 @@ Using a `Session` (API Utilities)
     # and use as a basis for another submission.
     batches_last_month = sesh.get_batches_last_n_days(30)
     for name, batch_id in batches_last_month:
-        print(f"{name} ({batch_id}))
+        print(f"{name} ({batch_id})")
     
     # Target the third batch for a rerun.
     _name, batch_id = batches_last_month[2]
@@ -195,24 +197,28 @@ Using the `api` module directly
     usage_stats = api.get_usage_last_n_days(token=token, n_days=30)
     print(usage_stats)
 
+    # Get detailed information for a previously submitted batch.
+    r = api.get_batch_data(token=TOKEN, batch_id="unique-batch-id", server=SERVER)
+    assert r.ok
+
     # Post a request for a single preview using default parameters.
     r = api.post_batch(
-        token=token,
-        generator="visionfit",
-        name="single preview",
-        job_params=[{}],
+        token=TOKEN,
+        generator="visionfit-v0.3.1",
+        name="preview post with defaults from api module",
+        job_params=[{}, {}],
         is_preview=True,
-        server=api.DEFAULT_SERVER
+        server=SERVER
     )
     assert r.ok
 
     # Post a request for three standard video jobs using default parameters.
     r = api.post_batch(
-        token=token,
-        generator="visionfit",
-        name="three default jobs",
-        job_params=[{}, {}, {}],
+        token=TOKEN,
+        generator="visionfit-v0.3.1",
+        name="video post from api module",
+        job_params=[{"frame_rate": 6, "num_reps": 1}, {"frame_rate": 6, "num_reps": 1}],
         is_preview=False,
-        server=api.DEFAULT_SERVER
+        server=SERVER
     )
     assert r.ok

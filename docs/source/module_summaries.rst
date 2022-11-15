@@ -29,10 +29,11 @@ Basic Usage
     from infinity_core import api as api
 
     my_token = "MY_TOKEN"
-    api.get_all_generator_data(my_token)
+    r = api.get_all_generator_data(my_token)
+    assert r.ok
 
     r = api.post_standard_job(token=token, json_data={"name": "visionfit", "param_values": {}})
-    print(r.status_code)
+    assert r.ok
 
 session
 -------
@@ -49,7 +50,13 @@ Basic Usage
    my_token = "MY_TOKEN"
    sesh = Session(token=token, generator="visionfit")
 
+   from pprint import pprint
+   pprint(sesh.parameter_info)
+
    job_params = [{"camera_height": v} for v in [1.0, 1.5, 2.0]]
+   errors = sesh.validate_job_params(job_params=job_params)
+   assert all[e is None for e in errors]
+
    videos = sesh.submit(job_params=job_params)
    videos.await_completion()
    videos.download(path="tmp/three_videos")
@@ -57,7 +64,7 @@ Basic Usage
 batch
 -----
 
-This module provides a `Batch` data structures and associated functionality to abstract over the concept of batch submission/generation for Infinity synthetic data. A batch (a logical grouping of specific jobs) is the base unit of synthetic data generation in the Infinity API. A single preview or generator job is simply a batch with one element. Use this module's abstractions to generate, track, and manipulate batches of synthetic data.
+This module provides a `Batch` data structure and associated functionality to abstract over the concept of batch submission/generation for Infinity synthetic data. A batch (a logical grouping of specific jobs) is the base unit of synthetic data generation in the Infinity API. A single preview or generator job is simply a batch with one element. Use this module's abstractions to generate, track, and manipulate batches of synthetic data.
 
 Basic Usage
 ***********

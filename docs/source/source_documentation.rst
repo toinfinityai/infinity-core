@@ -36,14 +36,6 @@ infinity\_core.data\_structures module
    :undoc-members:
    :show-inheritance:
 
-infinity\_core.utils module
----------------------------
-
-.. automodule:: infinity_core.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
