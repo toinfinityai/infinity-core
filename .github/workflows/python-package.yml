@@ -53,3 +53,5 @@ jobs:
     - name: Run unit tests with pytest
       run: |
         poetry run pytest -m "not integration"
+    - run: |
+        source $VENV
