@@ -118,7 +118,11 @@ class Session:
         """`dict`: Parameters of the generator with metadata."""
         pdict = dict()
         for p in self._generator_info["params"]:
-            pdict[p["name"]] = {"type": p["type"], "default_value": p["default_value"], "options": p["options"]}
+            # TODO: Should we force-error if some of these are not provided?
+            ty = p.get("type")
+            dv = p.get("default_value")
+            op = p.get("options")
+            pdict[p["name"]] = {"type": ty, "default_value": dv, "options": op}
 
         return pdict
 
@@ -140,7 +144,7 @@ class Session:
         """
         job_params: JobParams = dict()
         for k, v in self.parameter_info.items():
-            if "options" in v.keys():
+            if "options" in v.keys() and v["options"] is not None:
                 if "choices" in v["options"]:
                     job_params[k] = random.choice(v["options"]["choices"])
                 elif "min" in v["options"] and "max" in v["options"]:
