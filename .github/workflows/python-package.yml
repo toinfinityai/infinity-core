@@ -15,8 +15,19 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ matrix.os }}
     steps:
+    - run: |
+        source .venv/scripts/activate
+        pytest --version
+      if: runner.os == 'Windows'
+    - run: |
+        source .venv/bin/activate
+        pytest --version
+      if: runner.os != 'Windows'
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
@@ -53,5 +64,3 @@ jobs:
     - name: Run unit tests with pytest
       run: |
         poetry run pytest -m "not integration"
-    - run: |
-        source $VENV
