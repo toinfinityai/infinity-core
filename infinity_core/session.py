@@ -3,6 +3,10 @@
 This module provides a Session-style API to wrap interaction with the Infinity AI REST API. The
 Session API abstracts away details of user authentication and enables ergonomics in areas such as
 parameter validation and job parameter construction once a session is initialized.
+
+Synthetic data generation requests (via `Session.submit`) return a `Batch` instance (detailed in
+the `batch` module) which provides many facilities such as querying status of the batch, awaiting
+full completion, and downloading ready results.
 """
 
 import datetime

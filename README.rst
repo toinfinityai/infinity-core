@@ -17,7 +17,7 @@ Infinity API
 .. image:: https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336
     :target: https://pycqa.github.io/isort/
 
-The **infinity_core** package provides tools to interact with the `Infinity API <https://infinity.ai>`_ and generate synthetic data.
+The **infinity_core** package provides tools to interact with the `Infinity API <https://infinity.ai/api>>`_ and generate synthetic data.
 
 Requirements
 ------------
@@ -61,7 +61,9 @@ Using a `Session` (Basic)
     token = "TOKEN"
     sesh = Session(token=token, generator="visionfit-v0.3.1")
     
-    # Submit a request for three synthetic data videos.
+    # Submit a request for three synthetic data videos. A `batch.Batch` object is returned upon
+    # submission, which provides various facilities for monitoring completion and downloading
+    # ready results.
     job_params = [{"camera_height": v} for v in [1.0, 1.5, 2.0]]
     videos = sesh.submit(job_params=job_params)
     
@@ -94,9 +96,21 @@ Using a `Session` (Advanced)
     
     # Create a big new batch of job parameters with specific properties.
     import numpy as np
+
+    # A session provides the ability to generate a "random" job, where each parameter that
+    # has associated constraints (`min`, `max`, `choices`) is uniformly sampled within these bounds.
+    # The default job (using the default value associated with each parameter) is also available.
+    # Either of these can be used to help shape and construct a synthetic data batch you are preparing.
+    random_job = sesh.random_job()
+    default_job = sesh.default_job
+    pprint(random_job)
+    pprint(default_job)
+
     job_params = []
     for _ in range(100):
-        job_params.append({
+        # Here we explicitly set various job parameters in the batch we're constructing.
+        # Some parameters are set constant for all jobs and some are randomly sampled.
+        params = {
             "scene": np.random.choice(["BEDROOM_2", "BEDROOM_4"]),
             "exercise": "UPPERCUT-RIGHT",
             "gender": np.random.choice(["MALE", "FEMALE"]),
@@ -105,7 +119,15 @@ Using a `Session` (Advanced)
             "relative_height": truncnorm(2.0, 1.0, -4.0, 4.0), # Custom truncated Normal
             "image_width": 256,
             "image_height": 256,
-        })
+        }
+        # For the other parameters we're not explicitly setting, we can use the Session's random or
+        # default job facilities to fill them out accordingly. Note: you can also select one of these
+        # two behavior's to be carried out in the submission process when you use `Session.submit`,
+        # instead of doing it manually like below. Doing it manually beforehand, however, gives us a
+        # chance to scrutinize the full parameter statistics, e.g., using a `DataFrame` UX as below.
+        params = {**sesh.random_job(), **params} # Use a uniformly randomly sampled job to plug in unspecified values.
+        # params = {**sesh.default_job, **params} # Or use the default job to plug in unspecified values.
+        job_params.append(params)
 
     # Check the validity of your batch of jobs before submission. Errors can be addressed
     # before attempting to submit.
@@ -131,11 +153,13 @@ Using a `Session` (Advanced)
 
     # Merge our fresh params with the updated older params to make our final new batch.
     from pandas import concat
-    merged_df = concat([new_df, old_df]
+    merged_df = concat([new_df, old_df])
     final_job_params = merged_df.to_dict("records")
     
     # Submit the updated and combined new batch.
-    videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, preview=False)
+    # Note `random_sample`, which tells the submission API whether to use uniform random sampling
+    # or default values for any unspecified parameters, defaults to `True` if not provided.
+    videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, is_preview=False, random_sample=True)
     videos_batch.await_completion()
     videos_batch.download(path="tmp/merged_new_and_old_uppercut_batch")
     
@@ -176,9 +200,30 @@ Using a `Session` (API Utilities)
         jp["image_width": 512]
         jp["image_height": 512]
     
-    third_batch_higher_res = sesh.submit(name="higher res", job_params=job_params)
+    third_batch_higher_res = sesh.submit(name="higher res", job_params=job_params, random_sample=True)
     third_batch_higher_res.await_completion()
     third_batch.download(path="higher_res_batch")
+
+Using the `batch` module directly
+*********************************
+
+.. code-block:: python
+
+    from infinity_core.batch import Batch, submit_batch
+    from infinity_core.data_structures import JobType
+
+    my_token = "MY_TOKEN"
+
+    generator = "visionfit-v0.3.1"
+    batch = submit_batch(
+        token=token,
+        generator=generator,
+        job_type = JobType.STANDARD,
+        job_params = [{}, {}],
+        name="batch module demo with two default jobs",
+   )
+    valid_completed_jobs = batch.await_completion()
+    print(completed_jobs)
 
 Using the `api` module directly
 *******************************
