@@ -38,7 +38,7 @@ Basic Usage
 session
 -------
 
-This module provides a higher level `Session` API for interacting with the Infinity API. A `Session` instance can be created by passing in a user authentication token and a specific target generator for that session. This will create a session interface for the chosen generator, simplifying the process of submitting synthetic data requests and providing ergonomic functionality such as default job values for the target generator, validation of job parameters for the target generator, and easier synthetic data batch submission. Synthetic data generation with a session always involves producing `Batch` instances detailed in the `batch` module.
+This module provides a higher level `Session` API for interacting with the Infinity API. A `Session` instance can be created by passing in a user authentication token and a specific target generator for that session. This will create a session interface for the chosen generator, simplifying the process of submitting synthetic data requests and providing ergonomic functionality such as default and random job values for the target generator, validation of job parameters for the target generator, and easier synthetic data batch submission. Synthetic data generation with a session always involves producing `Batch` instances detailed in the `batch` module.
 
 Basic Usage
 ***********
