@@ -12,7 +12,7 @@ full completion, and downloading ready results.
 import datetime
 import random
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import infinity_core.api as api
 from infinity_core.batch import Batch, submit_batch
@@ -47,13 +47,12 @@ class Session:
         ).json()
 
     def _validate_params(self, user_params: JobParams) -> Optional[str]:
-        # TODO: Make this work for Python 3.7, or consider relaxing type checking.
-        ty_str_to_ty_python = {
-            "str": str,
-            "int": int,
-            "float": float,
-            "bool": bool,
-            "uuid": Optional[str],
+        ty_str_to_allowed_python_ty_set: Dict[str, Set[Any]] = {
+            "str": set([str]),
+            "int": set([int]),
+            "float": set([float]),
+            "bool": set([bool]),
+            "uuid": set([str, type(None)]),
         }
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
@@ -64,10 +63,10 @@ class Session:
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
-            expected_ty = ty_str_to_ty_python[pinfo[uk]["type"]]
-            # TODO: See if we can remove this type ignore.
-            if not isinstance(uv, expected_ty):  # type: ignore
-                type_violation_list.append((uk, type(uv), expected_ty))
+            expected_types = ty_str_to_allowed_python_ty_set[pinfo[uk]["type"]]
+            is_proper_type = any([isinstance(uv, ty) for ty in expected_types])
+            if not is_proper_type:
+                type_violation_list.append((uk, type(uv), expected_types))
                 continue
             param_options = pinfo[uk]["options"]
             if "min" in param_options:
@@ -98,7 +97,7 @@ class Session:
             if violated_types:
                 error_string += "\n\nType violations:\n"
                 for p, a, e in type_violation_list:
-                    error_string += f"Input parameter `{p}` expected type `{e}`, got `{a}`\n"
+                    error_string += f"Input parameter `{p}` expected one of compatible type(s) `{e}`, got `{a}`\n"
             if violated_constraints:
                 error_string += "\n\nConstraint violations:\n"
                 for p, c, cv, pv in constraint_violation_list:
