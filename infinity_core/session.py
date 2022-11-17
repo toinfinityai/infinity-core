@@ -68,19 +68,20 @@ class Session:
             if not is_proper_type:
                 type_violation_list.append((uk, type(uv), expected_types))
                 continue
-            param_options = pinfo[uk]["options"]
-            if "min" in param_options:
-                cv = param_options["min"]
-                if uv < cv:
-                    constraint_violation_list.append((uk, "min", cv, uv))
-            if "max" in param_options:
-                cv = param_options["max"]
-                if uv > cv:
-                    constraint_violation_list.append((uk, "max", cv, uv))
-            if "choices" in param_options:
-                cv = param_options["choices"]
-                if uv not in cv:
-                    constraint_violation_list.append((uk, "choices", cv, uv))
+            param_options = pinfo[uk].get("options")
+            if param_options is not None:
+                if "min" in param_options:
+                    cv = param_options["min"]
+                    if uv < cv:
+                        constraint_violation_list.append((uk, "min", cv, uv))
+                if "max" in param_options:
+                    cv = param_options["max"]
+                    if uv > cv:
+                        constraint_violation_list.append((uk, "max", cv, uv))
+                if "choices" in param_options:
+                    cv = param_options["choices"]
+                    if uv not in cv:
+                        constraint_violation_list.append((uk, "choices", cv, uv))
 
         had_unsupported_parameter = False if unsupported_parameter_set == set() else True
         violated_types = False if len(type_violation_list) == 0 else True
