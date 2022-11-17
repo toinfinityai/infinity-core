@@ -170,7 +170,7 @@ class Session:
         self,
         job_params: List[JobParams],
         is_preview: bool = False,
-        random_sample: bool = True,
+        random_sample: bool = False,
         batch_name: Optional[str] = None,
     ) -> Batch:
         """Submit a batch of 1 or more synthetic data batch jobs to the Infinity API.
