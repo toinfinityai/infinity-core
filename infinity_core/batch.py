@@ -229,7 +229,7 @@ class Batch:
             if timeout is not None:
                 if elapsed_time > timeout:
                     raise TimeoutError(f"Batch completion time exceeded timeout of {timeout} seconds")
-            print(f"{num_jobs_remaining} remaining jobs [{elapsed_time:d} s]...\t\t\t", end="\r")
+            print(f"{num_jobs_remaining} remaining jobs [{elapsed_time:d} s]...\t\t\t")
             time.sleep(polling_interval)
 
         duration = datetime.now() - start_time
@@ -292,7 +292,7 @@ class Batch:
                     failed_jobs.append(jid)
                 else:
                     num_jobs_completed += 1
-                    print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})...\t\t\t", end="\r")
+                    print(f"Completed downloads: ({num_jobs_completed}/{num_total_jobs})...\t\t\t")
 
         if num_jobs_completed != num_total_jobs:
             # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
