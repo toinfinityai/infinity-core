@@ -28,7 +28,7 @@ class TestBuildRequest:
 
         assert url == server + "/api/ep/"
 
-    def test_join_query_paremeters(self) -> None:
+    def test_join_query_parameters(self) -> None:
         token = "123"
         server = api.DEFAULT_SERVER
         endpoint = "ep"
