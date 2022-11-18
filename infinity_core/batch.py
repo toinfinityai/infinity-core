@@ -292,7 +292,7 @@ class Batch:
                     failed_jobs.append(jid)
                 else:
                     num_jobs_completed += 1
-                    print(f"\rCompleted downloads: ({num_jobs_completed}/{num_total_jobs}) ...", end=" ",  flush=True)
+                    print(f"\rCompleted downloads: ({num_jobs_completed}/{num_total_jobs}) ...", end=" ", flush=True)
 
         if num_jobs_completed != num_total_jobs:
             # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
