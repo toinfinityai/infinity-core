@@ -7,7 +7,7 @@ from typing import Optional
 import pytest
 
 import infinity_core.api as api
-from infinity_core.batch import Batch, submit_batch
+from infinity_core.batch import submit_batch
 from infinity_core.data_structures import JobType
 
 pytestmark = pytest.mark.needsapi
