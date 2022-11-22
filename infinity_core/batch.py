@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-import infinity_core.api as api
+from infinity_core import api
 from infinity_core.data_structures import CompletedJob, JobParams, JobType, ValidCompletedJob
 
 
@@ -25,7 +25,7 @@ class BatchJobTypeError(Exception):
     pass
 
 
-class BatchRetrievalError(Exception):
+class JobRetrivalError(Exception):
     pass
 
 
@@ -34,11 +34,15 @@ class DownloadError(Exception):
 
 
 def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server: str) -> JobParams:
-    # TODO: Find a better way to deal with this.
+    # TODO: Find away to avoid having to make another request just to special-case handling of `state`.
+    # This subtle behavior is used by this module to ensure `batch.job_params` provides a list of jobs
+    # with the job_id set as `state` so they can be readily used to seed future batches/jobs.
+    # We should re-think this approach in general and find a better long-term solution of handling
+    # previous job-dependent state.
     generator = json_data["job_runs"][0]["name"]
-    r2 = api.get_single_generator_data(token=token, generator_name=generator, server=server)
-    r2.raise_for_status()
-    param_names = set([p["name"] for p in r2.json()["params"]])
+    request_for_generator_info = api.get_single_generator_data(token=token, generator_name=generator, server=server)
+    request_for_generator_info.raise_for_status()
+    param_names = set([p["name"] for p in request_for_generator_info.json()["params"]])
     save_state = True if "state" in param_names else False
 
     jobs = {}
@@ -55,7 +59,6 @@ def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server
 def _download_and_extract_zip(download_info: Tuple[str, str, Path]) -> None:
     url, _, target_path = download_info
     r = requests.get(url)
-    # TODO: Confirm this will overwrite by default.
     with zipfile.ZipFile(io.BytesIO(r.content)) as z:
         z.extractall(target_path)
 
@@ -101,7 +104,7 @@ class Batch:
         Returns:
             Number of jobs remaining (computation in progress).
         """
-        data = self.get_batch_summary_data().json()
+        data = self.get_batch_summary_data()
         num_completed = 0
         for jr in data["job_runs"]:
             if not jr["in_progress"]:
@@ -109,23 +112,20 @@ class Batch:
 
         return self.num_jobs - num_completed
 
-    def get_batch_data(self) -> requests.models.Response:
+    def get_batch_data(self) -> Any:
         """Get detailed batch data from the API server.
 
         Returns:
-            HTTP request response.
+            Dictionary containing batch metadata.
 
         Raises:
             HTTPError: If the API query fails.
         """
         r = api.get_batch_data(token=self.token, batch_id=self.uid, server=self.server)
         r.raise_for_status()
-        if len(r.json()) > 0:
-            return r
-        else:
-            raise BatchRetrievalError(f"Batch `{self.uid}` does not exist")
+        return r.json()
 
-    def get_batch_summary_data(self) -> requests.models.Response:
+    def get_batch_summary_data(self) -> Any:
         """Get batch summary data from the API server.
 
         Returns:
@@ -137,10 +137,15 @@ class Batch:
         """
         r = api.get_batch_summary_data(token=self.token, batch_id=self.uid, server=self.server)
         r.raise_for_status()
-        if len(r.json()) > 0:
-            return r
+        return r.json()
+
+    def get_job_summary_data(self, job_id: str) -> Any:
+        batch_summary_data = self.get_batch_summary_data()
+        for jr in batch_summary_data["job_runs"]:
+            if jr["id"] == job_id:
+                return jr
         else:
-            raise BatchRetrievalError(f"Batch `{self.uid}` does not exist")
+            raise JobRetrivalError(f"Job (job ID: {job_id}) is not associated with batch (batch ID: {self.uid})")
 
     @classmethod
     def from_api(cls, token: str, batch_id: str, server: str = api.DEFAULT_SERVER) -> "Batch":
@@ -170,13 +175,16 @@ class Batch:
     def get_completed_jobs(self) -> List[CompletedJob]:
         """Returns a list of completed batch jobs.
 
+        Note: A job that resulted in an error is considered a 'completed' job. If you want a list
+        of valid completed jobs where valid means completed successfully with available results,
+        use the `get_valid_completed_jobs` method instead.
+
         Returns:
             A :obj:`list` of currently completed :obj:`Batch` :obj:`CompletedJobs`\s.
         """
-        data = self.get_batch_summary_data().json()
+        data = self.get_batch_summary_data()
 
-        # TODO: Compared to previous, this may lose the order of the original jobs, if that is/was important.
-        # TODO: Can the backend ensure ordering is preserved?
+        # TODO: Verify that submission order is preserved throughouth the system.
         completed_jobs = []
         for jr in data["job_runs"]:
             completed_jobs.append(
@@ -235,9 +243,6 @@ class Batch:
         duration = datetime.now() - start_time
         print(f"Duration for all jobs: {duration.seconds} [s]")
 
-        # Return results in the original (`self.jobs`) job order.
-        # TODO: Update the following to work as expected with new querying.
-        # TODO: Removed guarantee of same order as in `self.jobs`; is that OK?
         return self.get_valid_completed_jobs()
 
     def download(self, path: str, overwrite: bool = False) -> None:
@@ -272,7 +277,7 @@ class Batch:
 
         download_info = [(j.result_url, j.uid, out_dir) for j in downloadable_jobs]
         out_dir.mkdir(parents=True, exist_ok=True)
-        with open(batch_id_path, "w+") as f:
+        with open(batch_id_path, "w") as f:
             f.write(f"{self.uid}")
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_to_info = {executor.submit(_download_and_extract_zip, di): di for di in download_info}
@@ -328,11 +333,6 @@ def submit_batch(
         HTTPError: If batch submission post fails.
         BatchJobTypeError: If an unsupported job type is used.
     """
-
-    if token == "":
-        raise ValueError("`token` cannot be an empty string")
-    if generator == "":
-        raise ValueError("`generator` cannot be an empty string")
     name = "" if name is None else name
 
     print("Submitting batch of jobs to the API...")

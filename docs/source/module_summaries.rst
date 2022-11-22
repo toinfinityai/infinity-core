@@ -83,8 +83,8 @@ Basic Usage
     batch = submit_batch(
         token=token,
         generator=generator,
-        job_type = JobType.STANDARD,
-        job_params = make_interesting_param_distribution(generator),
+        job_type=JobType.STANDARD,
+        job_params=make_interesting_param_distribution(generator),
         name="demo batch",
    )
     valid_completed_jobs = batch.await_completion()
