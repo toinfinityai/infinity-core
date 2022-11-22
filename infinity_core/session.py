@@ -250,8 +250,10 @@ class Session:
         start_time = end_time - datetime.timedelta(days=n_days)
         r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
         r.raise_for_status()
-        data: List[Dict[str, Any]] = r.json()
+        # Reverse the order of the list from the default provided by the API.
+        data: List[Dict[str, Any]] = r.json()[::-1]
         for batch in data:
+            batch["batch_id"] = batch.pop("id")
             batch["created"] = datetime.datetime.fromisoformat(batch["created"])
 
         return data
