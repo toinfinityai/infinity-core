@@ -51,13 +51,13 @@ class CompletedJob:
     """A data structured encapsulating a completed API job request.
 
     Args:
-        uid: Unique job ID.
+        job_id: Unique job ID.
         generator: Name of the generator for the job.
         params: Job parameters associated with the completed job.
         result_url: URL containing completed job result data, if available.
     """
 
-    uid: str
+    job_id: str
     generator: str
     params: JobParams
     result_url: Optional[str] = None
@@ -65,7 +65,7 @@ class CompletedJob:
     def try_into_valid_completed_job(self) -> Optional["ValidCompletedJob"]:
         if self.result_url is not None:
             return ValidCompletedJob(
-                uid=self.uid,
+                job_id=self.job_id,
                 generator=self.generator,
                 params=self.params,
                 result_url=self.result_url,
@@ -79,13 +79,13 @@ class ValidCompletedJob:
     """A data structured encapsulating a valid completed API job request.
 
     Args:
-        uid: Unique job ID.
+        job_id: Unique job ID.
         generator: Name of the generator for the job.
         params: Job parameters associated with the completed job.
         result_url: URL containing completed job result data.
     """
 
-    uid: str
+    job_id: str
     generator: str
     params: JobParams
     result_url: str
@@ -94,7 +94,7 @@ class ValidCompletedJob:
     def try_from_completed_job(cls, completed_job: CompletedJob) -> Optional["ValidCompletedJob"]:
         if completed_job.result_url is not None:
             return cls(
-                uid=completed_job.uid,
+                job_id=completed_job.job_id,
                 generator=completed_job.generator,
                 params=completed_job.params,
                 result_url=completed_job.result_url,

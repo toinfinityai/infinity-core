@@ -9,7 +9,7 @@ from infinity_core.data_structures import JobType
 def batch() -> Batch:
     return Batch(
         token="test-token",
-        uid="123456789",
+        batch_id="123456789",
         name="test batch",
         jobs={"1": {"param1": 2.0}, "2": {"param2": True}},
         server=api.DEFAULT_SERVER,

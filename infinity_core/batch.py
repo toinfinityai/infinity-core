@@ -69,15 +69,15 @@ class Batch:
 
     Args:
         token: User authentication token.
-        uid: Unique batch ID.
+        batch_id: Unique batch ID.
         name: Short description of the batch.
-        jobs: Jobs submitted to the API successfully as uid:JobParams dict entries.
+        jobs: Jobs submitted to the API successfully as JobParams dict entries.
         server: URL of the target API server.
         job_type: Type of job in the batch.
     """
 
     token: str
-    uid: str
+    batch_id: str
     name: str
     jobs: Dict[str, JobParams]
     server: str
@@ -121,7 +121,7 @@ class Batch:
         Raises:
             HTTPError: If the API query fails.
         """
-        r = api.get_batch_data(token=self.token, batch_id=self.uid, server=self.server)
+        r = api.get_batch_data(token=self.token, batch_id=self.batch_id, server=self.server)
         r.raise_for_status()
         return r.json()
 
@@ -135,7 +135,7 @@ class Batch:
             HTTPError: If the API query fails.
             BatchJobTypeError: If the batch is associated with an unsupported job type.
         """
-        r = api.get_batch_summary_data(token=self.token, batch_id=self.uid, server=self.server)
+        r = api.get_batch_summary_data(token=self.token, batch_id=self.batch_id, server=self.server)
         r.raise_for_status()
         return r.json()
 
@@ -145,7 +145,7 @@ class Batch:
             if jr["id"] == job_id:
                 return jr
         else:
-            raise JobRetrivalError(f"Job (job ID: {job_id}) is not associated with batch (batch ID: {self.uid})")
+            raise JobRetrivalError(f"Job (job ID: {job_id}) is not associated with batch (batch ID: {self.batch_id})")
 
     @classmethod
     def from_api(cls, token: str, batch_id: str, server: str = api.DEFAULT_SERVER) -> "Batch":
@@ -170,7 +170,7 @@ class Batch:
         jobs = _parse_jobs_from_response_data(data, token=token, server=server)
         name = data["name"]
 
-        return cls(token=token, uid=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
+        return cls(token=token, batch_id=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
 
     def get_completed_jobs(self) -> List[CompletedJob]:
         """Returns a list of completed batch jobs.
@@ -190,7 +190,7 @@ class Batch:
             if not jr["in_progress"]:
                 completed_jobs.append(
                     CompletedJob(
-                        uid=jr["id"], generator=jr["name"], params=self.jobs[jr["id"]], result_url=jr["result_url"]
+                        job_id=jr["id"], generator=jr["name"], params=self.jobs[jr["id"]], result_url=jr["result_url"]
                     )
                 )
 
@@ -207,7 +207,7 @@ class Batch:
             output was not rendered. A "valid" job here means the final output is available.
         """
         return [
-            ValidCompletedJob(uid=cj.uid, generator=cj.generator, params=cj.params, result_url=cj.result_url)
+            ValidCompletedJob(job_id=cj.job_id, generator=cj.generator, params=cj.params, result_url=cj.result_url)
             for cj in self.get_completed_jobs()
             if cj.result_url is not None
         ]
@@ -262,24 +262,24 @@ class Batch:
                 try:
                     with open(batch_id_path, "r") as f:
                         previous_id = f.read().strip()
-                    if previous_id != self.uid:
+                    if previous_id != self.batch_id:
                         raise DownloadError(
-                            f"Attempt to download batch with id {self.uid} into existing folder for batch with id {previous_id}"
+                            f"Attempt to download batch with id {self.batch_id} into existing folder for batch with id {previous_id}"
                         )
                 except FileNotFoundError:
                     pass
                 downloaded_jids = {e.stem for e in out_dir.iterdir() if e.is_dir()}
-                downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.uid not in downloaded_jids]
+                downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.job_id not in downloaded_jids]
                 print(f"Found {len(downloaded_jids)} jobs already downloaded")
             else:
                 downloadable_jobs = self.get_valid_completed_jobs()
         else:
             downloadable_jobs = self.get_valid_completed_jobs()
 
-        download_info = [(j.result_url, j.uid, out_dir) for j in downloadable_jobs]
+        download_info = [(j.result_url, j.job_id, out_dir) for j in downloadable_jobs]
         out_dir.mkdir(parents=True, exist_ok=True)
         with open(batch_id_path, "w") as f:
-            f.write(f"{self.uid}")
+            f.write(f"{self.batch_id}")
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_to_info = {executor.submit(_download_and_extract_zip, di): di for di in download_info}
             failed_jobs = []
@@ -348,4 +348,4 @@ def submit_batch(
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 
     # TODO Implement this based on post response details.
-    return Batch(token=token, uid=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
+    return Batch(token=token, batch_id=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
