@@ -23,6 +23,10 @@ class ParameterValidationError(Exception):
     pass
 
 
+class SessionInitializationError(Exception):
+    pass
+
+
 # TODO: Figure out how to get Sphinx to not document `_generator_info`.
 @dataclass(frozen=False)
 class Session:
@@ -32,19 +36,28 @@ class Session:
         token: Use authentication token.
         generator: Target generator for the session.
         server: URL of the target API server.
-        batches: List of accumulated batch submitted during the session.
     """
 
     token: str
     generator: str
     server: str = api.DEFAULT_SERVER
-    batches: List[Batch] = field(default_factory=list)
     _generator_info: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self._generator_info = api.get_single_generator_data(
-            token=self.token, generator_name=self.generator, server=self.server
-        ).json()
+        r = api.get_single_generator_data(token=self.token, generator_name=self.generator, server=self.server)
+        if not r.ok:
+            if r.status_code == 401:
+                raise SessionInitializationError("Invalid token.")
+            if r.status_code == 500:
+                raise SessionInitializationError(f"Invalid generator name {self.generator}")
+            else:
+                try:
+                    r.raise_for_status()
+                except Exception as e:
+                    raise SessionInitializationError(
+                        f"Failed to initialize session with status code {r.status_code} caused by {e}"
+                    )
+        self._generator_info = r.json()
 
     def _validate_params(self, user_params: JobParams) -> Optional[str]:
         ty_str_to_allowed_python_ty_set: Dict[str, Set[Any]] = {
@@ -223,7 +236,6 @@ class Session:
             name=batch_name,
             server=self.server,
         )
-        self.batches.append(batch)
         return batch
 
     def batch_from_api(self, batch_id: str) -> Batch:

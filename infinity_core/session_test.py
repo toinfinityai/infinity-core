@@ -12,7 +12,6 @@ def _default_session_without_api_call() -> Session:
     sesh.token = "test-token"
     sesh.generator = "visionfit"
     sesh.server = api.DEFAULT_SERVER
-    sesh.batches = []
     sesh._generator_info = {
         "name": "test-generator-v0.1.0",
         "version": "0.1.0",

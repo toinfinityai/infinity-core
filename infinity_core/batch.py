@@ -34,26 +34,7 @@ class DownloadError(Exception):
 
 
 def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server: str) -> JobParams:
-    # TODO: Find away to avoid having to make another request just to special-case handling of `state`.
-    # This subtle behavior is used by this module to ensure `batch.job_params` provides a list of jobs
-    # with the job_id set as `state` so they can be readily used to seed future batches/jobs.
-    # We should re-think this approach in general and find a better long-term solution of handling
-    # previous job-dependent state.
-    generator = json_data["job_runs"][0]["name"]
-    request_for_generator_info = api.get_single_generator_data(token=token, generator_name=generator, server=server)
-    request_for_generator_info.raise_for_status()
-    param_names = set([p["name"] for p in request_for_generator_info.json()["params"]])
-    save_state = True if "state" in param_names else False
-
-    jobs = {}
-    for jr in json_data["job_runs"]:
-        params = jr["param_values"]
-        jid = jr["id"]
-        if save_state:
-            params["state"] = jid
-        jobs[jid] = params
-
-    return jobs
+    return {jr["id"]: jr["param_values"] for jr in json_data["job_runs"]}
 
 
 def _download_and_extract_zip(download_info: Tuple[str, str, Path]) -> None:
@@ -92,6 +73,15 @@ class Batch:
     def job_params(self) -> List[JobParams]:
         """:obj:`list` of :obj:`JobParams`: List of job parameters for jobs in the batch."""
         return list(self.jobs.values())
+
+    def get_job_params_seeded_for_rerun(self) -> List[JobParams]:
+        seeded_job_params = []
+        for jid, job_params in self.jobs.items():
+            if "state" in job_params.keys():
+                job_params["state"] = jid
+            seeded_job_params.append(job_params)
+
+        return seeded_job_params
 
     @property
     def num_jobs(self) -> int:
