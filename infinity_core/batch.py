@@ -187,11 +187,12 @@ class Batch:
         # TODO: Verify that submission order is preserved throughouth the system.
         completed_jobs = []
         for jr in data["job_runs"]:
-            completed_jobs.append(
-                CompletedJob(
-                    uid=jr["id"], generator=jr["name"], params=self.jobs[jr["id"]], result_url=jr["result_url"]
+            if not jr["in_progress"]:
+                completed_jobs.append(
+                    CompletedJob(
+                        uid=jr["id"], generator=jr["name"], params=self.jobs[jr["id"]], result_url=jr["result_url"]
+                    )
                 )
-            )
 
         return completed_jobs
 
