@@ -1,9 +1,4 @@
-```{image} infinity_ai_logo.png
-:alt: Infinity AI, Inc.
-:width: 200
-```
-
-# Infinity AI
+# Getting Started
 
 ```{image} https://img.shields.io/badge/code%20style-black-000000.svg
 :target: https://github.com/psf/black
@@ -27,19 +22,19 @@ The **infinity_core** package requires Python 3.7 or newer.
 
 Install from PyPI:
 
-```text
+```console
 pip install infinity_core
 ```
 
 Add to a Python project with Poetry:
 
-```text
+```console
 poetry add infinity_core
 ```
 
 Install from the source located on GitHub:
 
-```text
+```console
 git clone git@github.com:toinfinityai/infinity-api-dev.git
 poetry install
 ```

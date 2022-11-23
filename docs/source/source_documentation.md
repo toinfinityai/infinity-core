@@ -34,10 +34,3 @@
    :show-inheritance:
 ```
 
-## Module contents
-
-```{eval-rst}
-.. automodule:: infinity_core
-   :members:
-   :show-inheritance:
-```

@@ -1,19 +1,25 @@
-% Infinity API documentation master file, created by
-% sphinx-quickstart on Tue Oct  4 17:41:42 2022.
-% You can adapt this file completely to your liking, but it should at least
-% contain the root `toctree` directive.
+---
+title: Infinity API Core Package
+---
 
-# Infinity API Core
+
+# Infinity API Core Package
+
+The Infinity API
+Infinite data at your fingertips. The API gives you the ability to generate perfectly-labeled synthetic videos with just a few keystrokes. Generate a single video in real-time or an entire dataset overnight.
+
 
 ```{toctree}
-:caption: Infinity AI
+:caption: Guides
 :maxdepth: 2
 
-source/modules
+source/getting_started
+source/module_summaries
 ```
 
-## Indices and tables
+```{toctree}
+:caption: Reference
+:maxdepth: 2
 
-- {ref}`genindex`
-- {ref}`modindex`
-- {ref}`search`
+source/source_documentation
+```
