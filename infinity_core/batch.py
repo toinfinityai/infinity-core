@@ -25,7 +25,11 @@ class BatchJobTypeError(Exception):
     pass
 
 
-class JobRetrivalError(Exception):
+class BatchRetrievalError(Exception):
+    pass
+
+
+class JobRetrievalError(Exception):
     pass
 
 
@@ -106,40 +110,61 @@ class Batch:
 
         return self.num_jobs - num_completed
 
-    def get_batch_data(self) -> Any:
+    def get_batch_data(self) -> Dict[str, Any]:
         """Get detailed batch data from the API server.
 
         Returns:
             Dictionary containing batch metadata.
 
         Raises:
-            HTTPError: If the API query fails.
+            BatchRetrievalError: If the API response indicates failure.
         """
-        r = api.get_batch_data(token=self.token, batch_id=self.batch_id, server=self.server)
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = api.get_batch_data(token=self.token, batch_id=self.batch_id, server=self.server)
+            r.raise_for_status()
+            data: Dict[str, Any] = r.json()
+        except Exception as e:
+            raise BatchRetrievalError(f"Failed to get data from API for batch with `batch_id`: {self.batch_id}") from e
+        return data
 
-    def get_batch_summary_data(self) -> Any:
+    def get_batch_summary_data(self) -> Dict[str, Any]:
         """Get batch summary data from the API server.
 
         Returns:
-            HTTP request response.
+            Dictionary containing batch metadata.
 
         Raises:
-            HTTPError: If the API query fails.
-            BatchJobTypeError: If the batch is associated with an unsupported job type.
+            BatchRetrievalError: If the API response indicates failure.
         """
-        r = api.get_batch_summary_data(token=self.token, batch_id=self.batch_id, server=self.server)
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = api.get_batch_summary_data(token=self.token, batch_id=self.batch_id, server=self.server)
+            r.raise_for_status()
+            data: Dict[str, Any] = r.json()
+        except Exception as e:
+            raise BatchRetrievalError(
+                f"Failed to get summary data from API for batch with `batch_id`: {self.batch_id}"
+            ) from e
+        return data
 
-    def get_job_summary_data(self, job_id: str) -> Any:
+    def get_job_summary_data(self, job_id: str) -> Dict[str, Any]:
+        """Get job summary data for a particular job in the batch from the API server.
+
+        Args:
+            job_id: Unique job ID for the target job.
+
+        Returns:
+            Dictionary containing job metadata.
+
+        Raises:
+            JobRetrievalError: If the job ID is not associated with the batch.
+        """
         batch_summary_data = self.get_batch_summary_data()
         for jr in batch_summary_data["job_runs"]:
             if jr["id"] == job_id:
-                return jr
+                job_data: Dict[str, Any] = jr
+                return job_data
         else:
-            raise JobRetrivalError(f"Job (job ID: {job_id}) is not associated with batch (batch ID: {self.batch_id})")
+            raise JobRetrievalError(f"Job (job ID: {job_id}) is not associated with batch (batch ID: {self.batch_id})")
 
     @classmethod
     def from_api(cls, token: str, batch_id: str, server: str = api.DEFAULT_SERVER) -> "Batch":
@@ -154,11 +179,14 @@ class Batch:
             A :obj:`Batch` created with information from the API.
 
         Raises:
-            HTTPError: If the API query fails.
+            BatchRetrievalError: If the API response indicates failure.
         """
-        r = api.get_batch_data(token=token, batch_id=batch_id, server=server)
-        r.raise_for_status()
-        data = r.json()
+        try:
+            r = api.get_batch_data(token=token, batch_id=batch_id, server=server)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            raise BatchRetrievalError(f"Failed to get data from API for batch with `batch_id`: {batch_id}") from e
         batch_id = data["id"]
         job_type = JobType.PREVIEW if data["job_runs"][0]["is_preview"] else JobType.STANDARD
         jobs = _parse_jobs_from_response_data(data, token=token, server=server)
@@ -248,6 +276,9 @@ class Batch:
             overwrite: Flag for behavior if target path exists. If `True`, the target folder will
                 be fully overwritten. If `False`, detected already downloaded jobs will not be
                 re-downloaded.
+
+        Raises:
+            DownloadError: If all jobs in the batch were not downloaded successfully.
         """
         out_dir = Path(path)
         batch_id_path = out_dir / "batch_id.txt"
@@ -324,9 +355,7 @@ def submit_batch(
         A :obj:`Batch` instance from successful API submission.
 
     Raises:
-        ValueError: If `token` or `generator` is empty.
-        HTTPError: If batch submission post fails.
-        BatchJobTypeError: If an unsupported job type is used.
+        BatchSubmissionError: If batch submission to the API fails/is not confirmed.
     """
     name = "" if name is None else name
 
@@ -338,11 +367,11 @@ def submit_batch(
             token=token, generator=generator, name=name, job_params=job_params, is_preview=is_preview, server=server
         )
         r.raise_for_status()
+        response_data = r.json()
     except Exception as e:
         raise BatchSubmissionError(
             f"Error submitting batch (name: {name}) for `{generator}` on the `{server}` server"
         ) from e
-    response_data = r.json()
     batch_id = response_data["id"]
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 

@@ -19,6 +19,18 @@ from infinity_core.data_structures import HeaderKind
 DEFAULT_SERVER: str = "https://api.toinfinity.ai"
 
 
+class GetResponseRawBytesError(Exception):
+    pass
+
+
+class GetResponseJsonError(Exception):
+    pass
+
+
+class GetResponseTextError(Exception):
+    pass
+
+
 def _ensure_trailing_slash(url: str) -> str:
     return url if url.endswith("/") else url + "/"
 
@@ -79,10 +91,14 @@ def unwrap_raw_bytes_payload(response: Response) -> bytes:
         Raw byte payload returned from the request.
 
     Raises:
-        HTTPError: When `response` is associated with an error status code.
+        GetResponseRawBytesError: When `response` has an error status code and/or has no `content` field.
     """
-    response.raise_for_status()
-    return response.content
+    try:
+        response.raise_for_status()
+        data = response.content
+    except Exception as e:
+        raise GetResponseRawBytesError("Failed attempting to unwrap raw byte content from the response") from e
+    return data
 
 
 def unwrap_json_payload(response: Response) -> Any:
@@ -95,10 +111,14 @@ def unwrap_json_payload(response: Response) -> Any:
         Decoded JSON payload.
 
     Raises:
-        HTTPError: When `response` is associated with an error status code.
+        GetResponseJsonError: When `response` has an error status code and/or has no `json()` content.
     """
-    response.raise_for_status()
-    return response.json()
+    try:
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        raise GetResponseJsonError("Failed attempting to unwrap JSON content from the response") from e
+    return data
 
 
 def unwrap_text_payload(response: Response) -> str:
@@ -111,10 +131,14 @@ def unwrap_text_payload(response: Response) -> str:
         Decoded JSON payload.
 
     Raises:
-        HTTPError: When `response` is associated with an error status code.
+        GetResponseTextError: When `response` has an error status code and/or has no `test` field.
     """
-    response.raise_for_status()
-    return response.text
+    try:
+        response.raise_for_status()
+        data = response.text
+    except Exception as e:
+        raise GetResponseTextError("Failed attempting to unwrap text content from the response") from e
+    return data
 
 
 def get_all_preview_job_data(token: str, server: str = DEFAULT_SERVER) -> Response:
@@ -208,6 +232,9 @@ def get_batch_list(
 
     Returns:
         HTTP request response.
+
+    Raises:
+        ValueError: If `end_time` is chronologically before `start_time`.
     """
     if end_time is not None and start_time is not None:
         if end_time < start_time:
@@ -326,6 +353,9 @@ def get_openapi_schema(
 
     Returns:
         HTTP request response.
+
+    Raises:
+        ValueError: If an unsupported OpenAPI schema format is provided.
     """
     headers_set = {HeaderKind.AUTH}
     query_parameters = dict()
@@ -364,6 +394,9 @@ def get_usage_datetime_range(
 
     Returns:
         HTTP request response.
+
+    Raises:
+        ValueError: If `end_time` is chronologically before `start_time`.
     """
     if end_time is not None and start_time is not None:
         if end_time < start_time:
@@ -422,6 +455,11 @@ def post_batch(
 
     Returns:
         HTTP request response.
+
+    Raises:
+        ValueError: If `token` or `generator` is an empty string.
+        TypeError: If `job_params` is not a `list` of `dict`s.
+        ValueError: If `job_params` is an empty list.
     """
     if token == "":
         raise ValueError("`token` cannot be an empty string")

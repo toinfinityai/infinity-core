@@ -35,6 +35,14 @@ class SessionInitializationError(Exception):
     pass
 
 
+class BatchListRetrievalError(Exception):
+    pass
+
+
+class UsageStatsRetrievalError(Exception):
+    pass
+
+
 # TODO: Figure out how to get Sphinx to not document `_generator_info`.
 @dataclass(frozen=False)
 class Session:
@@ -52,20 +60,20 @@ class Session:
     _generator_info: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        r = api.get_single_generator_data(token=self.token, generator_name=self.generator, server=self.server)
-        if not r.ok:
+        try:
+            r = api.get_single_generator_data(token=self.token, generator_name=self.generator, server=self.server)
+            r.raise_for_status()
+            generator_info = r.json()
+        except Exception as e:
             if r.status_code == 401 or r.status_code == 403:
-                raise SessionInitializationError("Invalid token.")
-            if r.status_code == 500 or r.status_code == 404:
-                raise SessionInitializationError(f"Invalid generator name {self.generator}")
+                raise SessionInitializationError("Invalid token") from e
+            elif r.status_code == 500 or r.status_code == 404:
+                raise SessionInitializationError(f"Invalid generator name {self.generator}") from e
             else:
-                try:
-                    r.raise_for_status()
-                except Exception as e:
-                    raise SessionInitializationError(
-                        f"Failed to initialize session with status code {r.status_code}"
-                    ) from e
-        self._generator_info = r.json()
+                raise SessionInitializationError(
+                    f"Failed to initialize session with generator information from the API with status code {r.status_code}"
+                ) from e
+        self._generator_info = generator_info
 
     def _validate_params(self, user_params: JobParams) -> Optional[str]:
         pinfo = self.parameter_info
@@ -137,10 +145,11 @@ class Session:
         param_info = dict()
         for p in self._generator_info["params"]:
             # TODO: Should we force-error if some of these are not provided?
-            ty = p.get("type")
-            dv = p.get("default_value")
-            op = p.get("options")
-            param_info[p["name"]] = {"type": ty, "default_value": dv, "options": op}
+            param_info[p["name"]] = {
+                "type": p.get("type"),
+                "default_value": p.get("default_value"),
+                "options": p.get("options"),
+            }
 
         return param_info
 
@@ -199,7 +208,8 @@ class Session:
             The created :obj:`Batch` instance.
 
         Raises:
-            ParameterValidationError: If supplied parameters are not supported by the generator.
+            ValueError: If previews are requested but not allowed for the given generator.
+            ParameterValidationError: If supplied or computed parameters are not supported by the generator.
         """
         # Check that previews are allowed for the given generator if a preview is requested.
         if is_preview and not self._generator_info.get("options", {}).get("preview", False):
@@ -222,7 +232,6 @@ class Session:
         if not all([v is None for v in errors]):
             raise ParameterValidationError(errors)
 
-        # TODO: We can easily check from the API info if `preview` is supported by the generator.
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
         batch = submit_batch(
             token=self.token,
@@ -253,13 +262,21 @@ class Session:
 
         Returns:
             A :obj:`list` containing batches and their metadata.
+
+        Raises:
+            BatchListRetrievalError: If the API request to get the list of batches fails.
         """
         end_time = datetime.datetime.now().astimezone()
         start_time = end_time - datetime.timedelta(days=n_days)
-        r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
-        r.raise_for_status()
-        # Reverse the order of the list from the default provided by the API.
-        data: List[Dict[str, Any]] = r.json()[::-1]
+        try:
+            r = api.get_batch_list(token=self.token, start_time=start_time, end_time=end_time, server=self.server)
+            r.raise_for_status()
+            # Reverse the order of the list from the default provided by the API.
+            data: List[Dict[str, Any]] = r.json()[::-1]
+        except Exception as e:
+            raise BatchListRetrievalError(
+                f"Could not retrieve user batch list from the API for the last {n_days} days"
+            ) from e
         for batch in data:
             batch["batch_id"] = batch.pop("id")
             batch["created"] = datetime.datetime.fromisoformat(batch["created"])
@@ -276,8 +293,15 @@ class Session:
             A :obj:`dict` containing usage stats by generator.
 
         Raises:
-            HTTPError: When the API query returns with an error status code.
+            UsageStatsRetrievalError: If the API request to get usage stats fails.
         """
-        r = api.get_usage_last_n_days(token=self.token, n_days=n_days, server=self.server)
-        r.raise_for_status()
-        return dict(r.json())
+        try:
+            r = api.get_usage_last_n_days(token=self.token, n_days=n_days, server=self.server)
+            r.raise_for_status()
+            data: Dict[str, Any] = r.json()
+        except Exception as e:
+            raise UsageStatsRetrievalError(
+                f"Could not retrieve usage stats from the API for the last {n_days} days"
+            ) from e
+
+        return data
