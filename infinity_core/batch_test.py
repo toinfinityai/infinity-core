@@ -1,7 +1,7 @@
 import pytest
 
 import infinity_core.api as api
-from infinity_core.batch import Batch, submit_batch
+from infinity_core.batch import Batch, BatchSubmissionError, submit_batch
 from infinity_core.data_structures import JobType
 
 
@@ -32,7 +32,7 @@ class TestBatch:
 class TestSubmitBatch:
     def test_reject_empty_string_token(self) -> None:
         token = ""
-        with pytest.raises(ValueError):
+        with pytest.raises(BatchSubmissionError):
             submit_batch(
                 token=token,
                 generator="visionfit",
@@ -44,7 +44,7 @@ class TestSubmitBatch:
 
     def test_reject_empty_string_generator(self) -> None:
         generator = ""
-        with pytest.raises(ValueError):
+        with pytest.raises(BatchSubmissionError):
             submit_batch(
                 token="test-token",
                 generator=generator,
