@@ -62,6 +62,11 @@ class Session:
     def __post_init__(self) -> None:
         try:
             r = api.get_single_generator_data(token=self.token, generator_name=self.generator, server=self.server)
+        except Exception as e:
+            raise SessionInitializationError(
+                "Failed to initialize session with generator information from the API"
+            ) from e
+        try:
             r.raise_for_status()
             generator_info = r.json()
         except Exception as e:
@@ -105,18 +110,18 @@ class Session:
                     if uv not in cv:
                         constraint_violation_list.append((uk, "choices", cv, uv))
 
-        had_unsupported_parameter = False if unsupported_parameter_set == set() else True
-        violated_types = False if len(type_violation_list) == 0 else True
-        violated_constraints = False if len(constraint_violation_list) == 0 else True
+        had_unsupported_parameters = len(unsupported_parameter_set) > 0
+        violated_types = len(type_violation_list) > 0
+        violated_constraints = len(constraint_violation_list) > 0
 
-        if not had_unsupported_parameter and not violated_types and not violated_constraints:
-            return None
-        else:
+        if any([had_unsupported_parameters, violated_types, violated_constraints]):
             error_string = ""
-            if had_unsupported_parameter:
+            if had_unsupported_parameters:
                 error_string += "\n\nUnsupported parameters:\n"
-                for p in unsupported_parameter_set:
-                    error_string += f"`{p}`"
+                unsupported_parameter_list = list(unsupported_parameter_set)
+                for p in unsupported_parameter_list[0:-1]:
+                    error_string += f"`{p}`, "
+                error_string += f"`{unsupported_parameter_list[-1]}`"
             if violated_types:
                 error_string += "\n\nType violations:\n"
                 for p, a, e in type_violation_list:
@@ -126,6 +131,8 @@ class Session:
                 for p, c, cv, pv in constraint_violation_list:
                     error_string += f"Input parameter `{p}` violated constraint `{c}` ({cv}) with value {pv}\n"
             return error_string
+        else:
+            return None
 
     def validate_job_params(self, job_params: List[JobParams]) -> List[Optional[str]]:
         """Check if a list of job parameters is valid.
@@ -218,7 +225,10 @@ class Session:
         # Check just the user-supplied errors.
         user_input_errors = self.validate_job_params(job_params=job_params)
         if not all([v is None for v in user_input_errors]):
-            raise ParameterValidationError(user_input_errors)
+            error_str = "".join(
+                [f"\n\njob param index {idx}: {e}" for idx, e in enumerate(user_input_errors) if e is not None]
+            )
+            raise ParameterValidationError(error_str)
 
         complete_params = []
         for jp in job_params:
@@ -230,7 +240,8 @@ class Session:
         # Check total populated errors as well. TODO: Should we do this?
         errors = self.validate_job_params(job_params=complete_params)
         if not all([v is None for v in errors]):
-            raise ParameterValidationError(errors)
+            error_str = "".join([f"\n\njob param index {idx}: {e}" for idx, e in enumerate(errors) if e is not None])
+            raise ParameterValidationError(error_str)
 
         job_type = JobType.PREVIEW if is_preview else JobType.STANDARD
         batch = submit_batch(
