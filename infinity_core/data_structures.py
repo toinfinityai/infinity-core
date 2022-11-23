@@ -24,6 +24,9 @@ class HeaderKind(Enum):
 
         Returns:
             Dict containing an HTTP request key-value pair.
+
+        Raises:
+            ValueError: If an unsupported header kind is provided.
         """
         if self == HeaderKind.AUTH:
             return {"Authorization": f"Token {token}"}
@@ -63,6 +66,13 @@ class CompletedJob:
     result_url: Optional[str] = None
 
     def try_into_valid_completed_job(self) -> Optional["ValidCompletedJob"]:
+        """Try and convert into a valid completed job.
+
+        A valid completed job has a valid results URL from which generated synthetic data can be downloaded.
+
+        Returns:
+            Successfully constructed :obj:`ValidCompletedJob` or `None` if the job is invalid.
+        """
         if self.result_url is not None:
             return ValidCompletedJob(
                 job_id=self.job_id,
@@ -92,6 +102,13 @@ class ValidCompletedJob:
 
     @classmethod
     def try_from_completed_job(cls, completed_job: CompletedJob) -> Optional["ValidCompletedJob"]:
+        """Try to create a valid completed job from a standard completed job.
+
+        A valid completed job has a valid results URL from which generated synthetic data can be downloaded.
+
+        Returns:
+            Successfully constructed :obj:`ValidCompletedJob` or `None` if the job is invalid.
+        """
         if completed_job.result_url is not None:
             return cls(
                 job_id=completed_job.job_id,
