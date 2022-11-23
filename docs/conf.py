@@ -14,7 +14,7 @@ release = '0.1.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.napoleon']
+extensions = ['sphinx.ext.napoleon', 'myst_parser']
 autodoc_typehints = 'description'
 # autoclass_content = 'both'
 
