@@ -33,6 +33,10 @@ class DownloadError(Exception):
     pass
 
 
+class BatchSubmissionError(Exception):
+    pass
+
+
 def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server: str) -> JobParams:
     return {jr["id"]: jr["param_values"] for jr in json_data["job_runs"]}
 
@@ -329,10 +333,15 @@ def submit_batch(
     print("Submitting batch of jobs to the API...")
 
     is_preview = True if job_type == JobType.PREVIEW else False
-    r = api.post_batch(
-        token=token, generator=generator, name=name, job_params=job_params, is_preview=is_preview, server=server
-    )
-    r.raise_for_status()
+    try:
+        r = api.post_batch(
+            token=token, generator=generator, name=name, job_params=job_params, is_preview=is_preview, server=server
+        )
+        r.raise_for_status()
+    except Exception as e:
+        raise BatchSubmissionError(
+            f"Error submitting batch (name: {name}) for `{generator}` on the `{server}` server"
+        ) from e
     response_data = r.json()
     batch_id = response_data["id"]
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)

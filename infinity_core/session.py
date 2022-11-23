@@ -18,6 +18,14 @@ import infinity_core.api as api
 from infinity_core.batch import Batch, submit_batch
 from infinity_core.data_structures import JobParams, JobType
 
+_TYPE_STR_TO_ALLOWED_PYTHON_TYPE_SET: Dict[str, Set[Any]] = {
+    "str": set([str]),
+    "int": set([int]),
+    "float": set([float]),
+    "bool": set([bool]),
+    "uuid": set([str, type(None)]),
+}
+
 
 class ParameterValidationError(Exception):
     pass
@@ -46,27 +54,20 @@ class Session:
     def __post_init__(self) -> None:
         r = api.get_single_generator_data(token=self.token, generator_name=self.generator, server=self.server)
         if not r.ok:
-            if r.status_code == 401:
+            if r.status_code == 401 or r.status_code == 403:
                 raise SessionInitializationError("Invalid token.")
-            if r.status_code == 500:
+            if r.status_code == 500 or r.status_code == 404:
                 raise SessionInitializationError(f"Invalid generator name {self.generator}")
             else:
                 try:
                     r.raise_for_status()
                 except Exception as e:
                     raise SessionInitializationError(
-                        f"Failed to initialize session with status code {r.status_code} caused by {e}"
-                    )
+                        f"Failed to initialize session with status code {r.status_code}"
+                    ) from e
         self._generator_info = r.json()
 
     def _validate_params(self, user_params: JobParams) -> Optional[str]:
-        ty_str_to_allowed_python_ty_set: Dict[str, Set[Any]] = {
-            "str": set([str]),
-            "int": set([int]),
-            "float": set([float]),
-            "bool": set([bool]),
-            "uuid": set([str, type(None)]),
-        }
         pinfo = self.parameter_info
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
@@ -76,7 +77,7 @@ class Session:
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
-            expected_types = ty_str_to_allowed_python_ty_set[pinfo[uk]["type"]]
+            expected_types = _TYPE_STR_TO_ALLOWED_PYTHON_TYPE_SET[pinfo[uk]["type"]]
             is_proper_type = any([isinstance(uv, ty) for ty in expected_types])
             if not is_proper_type:
                 type_violation_list.append((uk, type(uv), expected_types))
@@ -133,15 +134,15 @@ class Session:
     @property
     def parameter_info(self) -> Dict[str, Dict[str, Any]]:
         """`dict`: Parameters of the generator with metadata."""
-        pdict = dict()
+        param_info = dict()
         for p in self._generator_info["params"]:
             # TODO: Should we force-error if some of these are not provided?
             ty = p.get("type")
             dv = p.get("default_value")
             op = p.get("options")
-            pdict[p["name"]] = {"type": ty, "default_value": dv, "options": op}
+            param_info[p["name"]] = {"type": ty, "default_value": dv, "options": op}
 
-        return pdict
+        return param_info
 
     # TODO: Make cached property that is compatible with 3.7+ and satisfies `mypy`.
     @property
@@ -157,7 +158,7 @@ class Session:
         any parameters without these properties, the default value will be used.
 
         Returns:
-            :obj:`JobParams` containing the randomly sampled parameters.
+            :obj:`JobParams` dictionary containing the randomly sampled parameters.
         """
         job_params: JobParams = dict()
         for k, v in self.parameter_info.items():
@@ -200,14 +201,9 @@ class Session:
         Raises:
             ParameterValidationError: If supplied parameters are not supported by the generator.
         """
-        if is_preview:
-            previews_allowed = False
-            if "options" in self._generator_info:
-                if "preview" in self._generator_info["options"]:
-                    if self._generator_info["options"]["preview"] is True:
-                        previews_allowed = True
-            if not previews_allowed:
-                raise ValueError(f"Previews are not supported for `{self.generator}`")
+        # Check that previews are allowed for the given generator if a preview is requested.
+        if is_preview and not self._generator_info.get("options", {}).get("preview", False):
+            raise ValueError(f"Previews are not supported for `{self.generator}`")
 
         # Check just the user-supplied errors.
         user_input_errors = self.validate_job_params(job_params=job_params)
