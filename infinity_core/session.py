@@ -43,6 +43,35 @@ class UsageStatsRetrievalError(Exception):
     pass
 
 
+class AvailableGeneratorRetrievalError(Exception):
+    pass
+
+
+def get_session_compatible_generators_for_token(token: str, server: str) -> List[str]:
+    """Get a list of available generators for the given token
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+
+    Returns:
+        List of available generator names as strings.
+
+    Raises:
+        AvailableGeneratorRetrievalError: When the API request fails or fails to provide data.
+    """
+    try:
+        r = api.get_all_generator_data(token=token, server=server)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        raise AvailableGeneratorRetrievalError(
+            "Could not retrieve the list of generators available to the user from the API"
+        ) from e
+
+    return [generator["name"] for generator in data]
+
+
 # TODO: Figure out how to get Sphinx to not document `_generator_info`.
 @dataclass(frozen=False)
 class Session:
