@@ -268,7 +268,7 @@ class Batch:
 
         return self.get_valid_completed_jobs()
 
-    def download(self, path: str, overwrite: bool = False) -> None:
+    def download(self, path: str, overwrite: bool = False) -> bool:
         """Download completed jobs to a target folder.
 
         Args:
@@ -276,6 +276,9 @@ class Batch:
             overwrite: Flag for behavior if target path exists. If `True`, the target folder will
                 be fully overwritten. If `False`, detected already downloaded jobs will not be
                 re-downloaded.
+
+        Returns:
+            Boolean flag indicating success (True) or failure (False) completing the download.
 
         Raises:
             DownloadError: If all jobs in the batch were not downloaded successfully.
@@ -331,6 +334,7 @@ class Batch:
                 f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
             )
         print("\nDownload complete!")
+        return True
 
 
 def submit_batch(
