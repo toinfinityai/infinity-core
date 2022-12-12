@@ -131,7 +131,7 @@ class Session:
             if casting_type is not None:
                 try:
                     uv = casting_type(uv)
-                except Exception:
+                except ValueError:
                     type_cast_violation_list.append((uk, casting_type))
                     continue
             param_options = pinfo[uk].get("options")
