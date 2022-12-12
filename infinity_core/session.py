@@ -47,8 +47,8 @@ class AvailableGeneratorRetrievalError(Exception):
     pass
 
 
-def get_session_compatible_generators_for_token(token: str, server: str) -> List[str]:
-    """Get a list of available generators for the given token
+def get_available_generators(token: str, server: str) -> List[str]:
+    """Get a list of available generators for the given token.
 
     Args:
         token: User authentication token.
