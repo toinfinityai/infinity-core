@@ -20,11 +20,12 @@ from infinity_core.data_structures import JobParams, JobType
 
 _TYPE_STR_TO_ALLOWED_PYTHON_TYPE_SET: Dict[str, Set[Any]] = {
     "str": set([str]),
-    "int": set([int]),
-    "float": set([float]),
     "bool": set([bool]),
     "uuid": set([str, type(None)]),
 }
+
+
+_TYPE_STR_TO_CAST_TYPE: Dict[str, Any] = {"int": int, "float": float}
 
 
 class ParameterValidationError(Exception):
@@ -41,6 +42,35 @@ class BatchListRetrievalError(Exception):
 
 class UsageStatsRetrievalError(Exception):
     pass
+
+
+class AvailableGeneratorRetrievalError(Exception):
+    pass
+
+
+def get_available_generators(token: str, server: str) -> List[str]:
+    """Get a list of available generators for the given token.
+
+    Args:
+        token: User authentication token.
+        server: Base server URL.
+
+    Returns:
+        List of available generator names as strings.
+
+    Raises:
+        AvailableGeneratorRetrievalError: When the API request fails or fails to provide data.
+    """
+    try:
+        r = api.get_all_generator_data(token=token, server=server)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        raise AvailableGeneratorRetrievalError(
+            "Could not retrieve the list of generators available to the user from the API"
+        ) from e
+
+    return [generator["name"] for generator in data]
 
 
 # TODO: Figure out how to get Sphinx to not document `_generator_info`.
@@ -85,16 +115,25 @@ class Session:
         valid_parameter_set = set(pinfo.keys())
         unsupported_parameter_set = set()
         type_violation_list = list()
+        type_cast_violation_list = list()
         constraint_violation_list = list()
         for uk, uv in user_params.items():
             if uk not in valid_parameter_set:
                 unsupported_parameter_set.add(uk)
                 continue
-            expected_types = _TYPE_STR_TO_ALLOWED_PYTHON_TYPE_SET[pinfo[uk]["type"]]
-            is_proper_type = any([isinstance(uv, ty) for ty in expected_types])
-            if not is_proper_type:
-                type_violation_list.append((uk, type(uv), expected_types))
-                continue
+            expected_types = _TYPE_STR_TO_ALLOWED_PYTHON_TYPE_SET.get(pinfo[uk]["type"])
+            if expected_types is not None:
+                is_proper_type = any([isinstance(uv, ty) for ty in expected_types])
+                if not is_proper_type:
+                    type_violation_list.append((uk, type(uv), expected_types))
+                    continue
+            casting_type = _TYPE_STR_TO_CAST_TYPE.get(pinfo[uk]["type"])
+            if casting_type is not None:
+                try:
+                    uv = casting_type(uv)
+                except ValueError:
+                    type_cast_violation_list.append((uk, casting_type))
+                    continue
             param_options = pinfo[uk].get("options")
             if param_options is not None:
                 if "min" in param_options:
@@ -112,9 +151,10 @@ class Session:
 
         had_unsupported_parameters = len(unsupported_parameter_set) > 0
         violated_types = len(type_violation_list) > 0
+        violated_casting = len(type_cast_violation_list) > 0
         violated_constraints = len(constraint_violation_list) > 0
 
-        if any([had_unsupported_parameters, violated_types, violated_constraints]):
+        if any([had_unsupported_parameters, violated_types, violated_casting, violated_constraints]):
             error_string = ""
             if had_unsupported_parameters:
                 error_string += "\n\nUnsupported parameters:\n"
@@ -126,6 +166,10 @@ class Session:
                 error_string += "\n\nType violations:\n"
                 for p, a, e in type_violation_list:
                     error_string += f"Input parameter `{p}` expected one of compatible type(s) `{e}`, got `{a}`\n"
+            if violated_casting:
+                error_string += "\n\nType casting violations:\n"
+                for p, c in type_cast_violation_list:
+                    error_string += f"Input parameter `{p}` could not be cast as type `{c}` as expected\n"
             if violated_constraints:
                 error_string += "\n\nConstraint violations:\n"
                 for p, c, cv, pv in constraint_violation_list:

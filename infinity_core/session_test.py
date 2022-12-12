@@ -52,9 +52,13 @@ class TestSessionJobParamValidation:
         assert all([v is None for v in session.validate_job_params(job_params=job_params)])
 
     def test_invalid_type(self, session: Session) -> None:
-        job_params: List[Dict[str, Any]] = [{"param1": "2"}, {"param2": 2}]
+        job_params: List[Dict[str, Any]] = [{"param1": "one"}, {"param2": "two"}, {"param3": 1}]
         errors = session.validate_job_params(job_params=job_params)
         assert all([e is not None for e in errors])
+
+    def test_casting_numerical_types(self, session: Session) -> None:
+        job_params: List[Dict[str, Any]] = [{"param1": 1.0, "param2": 2}]
+        assert all([v is None for v in session.validate_job_params(job_params=job_params)])
 
     def test_invalid_parameter(self, session: Session) -> None:
         job_params: List[Dict[str, Any]] = [{"param4": 1.5}]
