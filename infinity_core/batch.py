@@ -268,7 +268,7 @@ class Batch:
 
         return self.get_valid_completed_jobs()
 
-    def download(self, path: str, overwrite: bool = False) -> bool:
+    def download(self, path: str, overwrite: bool = False, quiet: bool = False) -> bool:
         """Download completed jobs to a target folder.
 
         Args:
@@ -276,6 +276,7 @@ class Batch:
             overwrite: Flag for behavior if target path exists. If `True`, the target folder will
                 be fully overwritten. If `False`, detected already downloaded jobs will not be
                 re-downloaded.
+            quiet: Flag indicating whether to silence printing to `stdout` or not.
 
         Returns:
             Boolean flag indicating success (True) or failure (False) completing the download.
@@ -298,7 +299,8 @@ class Batch:
                     pass
                 downloaded_jids = {e.stem for e in out_dir.iterdir() if e.is_dir()}
                 downloadable_jobs = [j for j in self.get_valid_completed_jobs() if j.job_id not in downloaded_jids]
-                print(f"Found {len(downloaded_jids)} jobs already downloaded")
+                if not quiet:
+                    print(f"Found {len(downloaded_jids)} jobs already downloaded")
             else:
                 downloadable_jobs = self.get_valid_completed_jobs()
         else:
@@ -326,14 +328,18 @@ class Batch:
                     failed_jobs.append(jid)
                 else:
                     num_jobs_completed += 1
-                    print(f"\rCompleted downloads: ({num_jobs_completed}/{num_total_jobs}) ...", end=" ", flush=True)
+                    if not quiet:
+                        print(
+                            f"\rCompleted downloads: ({num_jobs_completed}/{num_total_jobs}) ...", end=" ", flush=True
+                        )
 
         if num_jobs_completed != num_total_jobs:
             # TODO: Consider truncating for huge numbs of jobs and immediate failure (no internet).
             raise DownloadError(
                 f"{num_total_jobs - num_jobs_completed} jobs did not download successfully\nFailed job IDs: {failed_jobs}"
             )
-        print("\nDownload complete!")
+        if not quiet:
+            print("\nDownload complete!")
         return True
 
 
