@@ -449,7 +449,7 @@ def post_batch(
         token: User authentication token.
         generator: Unique name of the target generator.
         name: Descriptive name for the batch.
-        job_params: List of dictionares containing job parameters for all jobs of the batch.
+        job_params: List of dictionaries containing job parameters for all jobs of the batch.
         is_preview: Flag indicating the batch consists of preview job types.
         server: Base server URL.
 
@@ -461,6 +461,65 @@ def post_batch(
         TypeError: If `job_params` is not a `list` of `dict`s.
         ValueError: If `job_params` is an empty list.
     """
+    _validate_batch_params(generator, job_params, token)
+    job_runs = [
+        {"name": generator, "is_preview": is_preview, "param_values": jp}
+        for jp in job_params
+    ]
+    json_data = {"name": name, "job_runs": job_runs}
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
+    )
+    return requests.post(url=url, headers=headers, json=json_data)
+
+
+def estimate_batch_samples(
+    token: str,
+    generator: str,
+    name: str,
+    job_params: List[Dict[str, Any]],
+    is_preview: bool,
+    server: str,
+) -> Response:
+    """Estimate number of samples by job in a batch.
+
+    Args:
+        token: User authentication token.
+        generator: Unique name of the target generator.
+        name: Descriptive name for the batch.
+        job_params: List of dictionaries containing job parameters for all jobs of the batch.
+        is_preview: Flag indicating the batch consists of preview job types.
+        server: Base server URL.
+
+    Returns:
+        HTTP request response.
+
+    Raises:
+        ValueError: If `token` or `generator` is an empty string.
+        TypeError: If `job_params` is not a `list` of `dict`s.
+        ValueError: If `job_params` is an empty list.
+    """
+    _validate_batch_params(generator, job_params, token)
+    job_runs = [
+        {"name": generator, "is_preview": is_preview, "param_values": jp}
+        for jp in job_params
+    ]
+    json_data = {"name": name, "job_runs": job_runs}
+    url, headers = build_request(
+        token=token,
+        server=server,
+        endpoint="api/batch/estimate/",
+        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
+    )
+    return requests.post(url=url, headers=headers, json=json_data)
+
+
+def _validate_batch_params(
+    generator: str, job_params: List[Dict[str, Any]], token: str
+) -> None:
     if token == "":
         raise ValueError("`token` cannot be an empty string")
     if generator == "":
@@ -471,12 +530,3 @@ def post_batch(
         raise ValueError("`job_params` is empty; no jobs to submit!")
     if not all([isinstance(d, dict) for d in job_params]):
         raise TypeError("Not all elements of `job_params` are of type `dict`")
-    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
-    json_data = {"name": name, "job_runs": job_runs}
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/batch/",
-        headers=set([HeaderKind.AUTH, HeaderKind.ACCEPT_JSON, HeaderKind.JSON_CONTENT]),
-    )
-    return requests.post(url=url, headers=headers, json=json_data)

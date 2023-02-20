@@ -152,6 +152,34 @@ class TestApiPostRequestIntegration:
 
 
 @pytest.mark.integration
+@pytest.mark.apipost
+class TestApiSampleEstimateRequestIntegration:
+    def test_estimate_batch_preview_request(self, cfg: TestConfig) -> None:
+        r = api.estimate_batch_samples(
+            token=cfg.token,
+            generator=cfg.generator_name,
+            name="test",
+            job_params=[{}],
+            is_preview=False,
+            server=cfg.server,
+        )
+
+        assert r.ok
+
+    def test_estimate_batch_standard_request(self, cfg: TestConfig) -> None:
+        r = api.estimate_batch_samples(
+            token=cfg.token,
+            generator=cfg.generator_name,
+            name="test",
+            job_params=[{}, {}],
+            is_preview=False,
+            server=cfg.server,
+        )
+
+        assert r.ok
+
+
+@pytest.mark.integration
 @pytest.mark.batchpost
 class TestBatchSubmissionIntegration:
     def test_preview_batch(self, cfg: TestConfig) -> None:

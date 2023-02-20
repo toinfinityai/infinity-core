@@ -110,11 +110,9 @@ for _ in range(100):
         "image_height": 256,
     }
     # For the other parameters we're not explicitly setting, we can use the Session's random or
-    # default job facilities to fill them out accordingly. Note: you can also select one of these
-    # two behavior's to be carried out in the submission process when you use `Session.submit`,
-    # instead of doing it manually like below. Doing it manually beforehand, however, gives us a
-    # chance to scrutinize the full parameter statistics, e.g., using a `DataFrame` UX as below.
-    params = {**sesh.random_job(), **params} # Use a uniformly randomly sampled job to plug in unspecified values.
+    # default job facilities to fill them out accordingly.
+    params = sesh.randomize_unspecified_params(params) # Use a uniformly randomly sampled job to set unspecified values.
+    # params = {**sesh.random_job(), **params} # The above line is equivalent to this
     # params = {**sesh.default_job, **params} # Or use the default job to plug in unspecified values.
     job_params.append(params)
 
@@ -145,10 +143,12 @@ from pandas import concat
 merged_df = concat([new_df, old_df])
 final_job_params = merged_df.to_dict("records")
 
+# Estimate the number of frames that will be generated for the batch.
+total_frame_count = sum(sesh.estimate_samples(name="frankenstein", job_params=final_job_params, is_preview=False))
+print(f"Est. frame count: {total_frame_count}")
+
 # Submit the updated and combined new batch.
-# Note `random_sample`, which tells the submission API whether to use uniform random sampling
-# or default values for any unspecified parameters, defaults to `True` if not provided.
-videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, is_preview=False, random_sample=True)
+videos_batch = sesh.submit(name="frankenstein", job_params=final_job_params, is_preview=False)
 videos_batch.await_completion()
 videos_batch.download(path="tmp/merged_new_and_old_uppercut_batch")
 ```
@@ -188,10 +188,12 @@ for jp in job_params:
     jp["image_width": 512]
     jp["image_height": 512]
 
-third_batch_higher_res = sesh.submit(name="higher res", job_params=job_params, random_sample=True)
+third_batch_higher_res = sesh.submit(name="higher res", job_params=job_params)
 third_batch_higher_res.await_completion()
 third_batch.download(path="higher_res_batch")
 ```
+
+# TODO document estimation for jobs
 
 ### Using the `batch` module directly
 

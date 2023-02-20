@@ -41,6 +41,10 @@ class BatchSubmissionError(Exception):
     pass
 
 
+class BatchEstimationError(Exception):
+    pass
+
+
 def _parse_jobs_from_response_data(json_data: Dict[str, Any], token: str, server: str) -> JobParams:
     return {jr["id"]: jr["param_values"] for jr in json_data["job_runs"]}
 
@@ -359,6 +363,7 @@ def submit_batch(
         job_type: Type of job requested in the batch.
         job_params: :obj:`list` of :obj:`dict` containing input parameters for each job of the
             batch.
+        name: Name of batch.
         server: URL of the target API server.
 
     Returns:
@@ -386,4 +391,57 @@ def submit_batch(
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 
     # TODO Implement this based on post response details.
-    return Batch(token=token, batch_id=batch_id, name=name, jobs=jobs, server=server, job_type=job_type)
+    return Batch(
+        token=token,
+        batch_id=batch_id,
+        name=name,
+        jobs=jobs,
+        server=server,
+        job_type=job_type,
+    )
+
+
+def estimate_batch_samples(
+    token: str,
+    generator: str,
+    job_type: JobType,
+    job_params: List[Dict[str, Any]],
+    name: Optional[str] = None,
+    server: str = api.DEFAULT_SERVER,
+) -> List[int]:
+    """Estimates the number of samples by job in a batch without submitting the batch for execution.
+
+    Args:
+        token: API authentication token associated with the batch.
+        generator: Name of the generator associated with the batch.
+        job_type: Type of job requested in the batch.
+        job_params: :obj:`list` of :obj:`dict` containing input parameters for each job of the
+            batch.
+        name: Name of batch.
+        server: URL of the target API server.
+
+    Returns:
+        A :obj:`list` of the integer number of samples estimates for each job in a batch
+
+    Raises:
+        BatchEstimationError: If batch submission to the API fails/is not confirmed.
+    """
+    name = name or ""
+    is_preview = job_type == JobType.PREVIEW
+    try:
+        r = api.estimate_batch_samples(
+            token=token,
+            generator=generator,
+            name=name,
+            job_params=job_params,
+            is_preview=is_preview,
+            server=server,
+        )
+        r.raise_for_status()
+        response_data = r.json()
+    except Exception as e:
+        raise BatchEstimationError(
+            f"Error estimating samples for batch (name: {name}) for `{generator}` on the `{server}` server"
+        ) from e
+    samples_by_job: List[int] = response_data
+    return samples_by_job
