@@ -220,7 +220,10 @@ def get_single_standard_job_data(token: str, standard_job_id: str, server: str =
 
 
 def get_batch_list(
-    token: str, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None, server: str = DEFAULT_SERVER
+    token: str,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    server: str = DEFAULT_SERVER,
 ) -> Response:
     """Get a list of batches associated with the given token over some time range.
 
@@ -441,7 +444,12 @@ def get_usage_last_n_days(
 
 
 def post_batch(
-    token: str, generator: str, name: str, job_params: List[Dict[str, Any]], is_preview: bool, server: str
+    token: str,
+    generator: str,
+    name: str,
+    job_params: List[Dict[str, Any]],
+    is_preview: bool,
+    server: str,
 ) -> Response:
     """Post a batch to the Infinity API.
 
@@ -462,10 +470,7 @@ def post_batch(
         ValueError: If `job_params` is an empty list.
     """
     _validate_batch_params(generator, job_params, token)
-    job_runs = [
-        {"name": generator, "is_preview": is_preview, "param_values": jp}
-        for jp in job_params
-    ]
+    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
     json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
         token=token,
@@ -503,10 +508,7 @@ def estimate_batch_samples(
         ValueError: If `job_params` is an empty list.
     """
     _validate_batch_params(generator, job_params, token)
-    job_runs = [
-        {"name": generator, "is_preview": is_preview, "param_values": jp}
-        for jp in job_params
-    ]
+    job_runs = [{"name": generator, "is_preview": is_preview, "param_values": jp} for jp in job_params]
     json_data = {"name": name, "job_runs": job_runs}
     url, headers = build_request(
         token=token,
@@ -517,9 +519,7 @@ def estimate_batch_samples(
     return requests.post(url=url, headers=headers, json=json_data)
 
 
-def _validate_batch_params(
-    generator: str, job_params: List[Dict[str, Any]], token: str
-) -> None:
+def _validate_batch_params(generator: str, job_params: List[Dict[str, Any]], token: str) -> None:
     if token == "":
         raise ValueError("`token` cannot be an empty string")
     if generator == "":
