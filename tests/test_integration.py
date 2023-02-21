@@ -7,7 +7,7 @@ from typing import Optional
 import pytest
 
 import infinity_core.api as api
-from infinity_core.batch import submit_batch
+from infinity_core.batch import estimate_batch_samples, submit_batch
 from infinity_core.data_structures import JobType
 
 pytestmark = pytest.mark.needsapi
@@ -207,3 +207,31 @@ class TestBatchSubmissionIntegration:
         assert batch.num_jobs == 1
         valid_completed_jobs = batch.await_completion(timeout=30 * 60)
         assert len(valid_completed_jobs) == 1
+
+
+@pytest.mark.integration
+@pytest.mark.batchpost
+class TestBatchEstimationIntegration:
+    def test_estimate_preview_batch(self, cfg: TestConfig) -> None:
+        estimate = estimate_batch_samples(
+            cfg.token,
+            cfg.generator_name,
+            JobType.PREVIEW,
+            [{}, {}],
+            "Test estimation",
+            cfg.server,
+        )
+        assert estimate == [1, 1]
+
+    def test_estimate_standard_batch(self, cfg: TestConfig) -> None:
+        estimate = estimate_batch_samples(
+            cfg.token,
+            cfg.generator_name,
+            JobType.PREVIEW,
+            [{}, {}],
+            "Test estimation",
+            cfg.server,
+        )
+        assert len(estimate) == 2
+        assert estimate[0] >= 1
+        assert estimate[1] >= 1
