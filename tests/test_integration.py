@@ -160,7 +160,7 @@ class TestApiSampleEstimateRequestIntegration:
             generator=cfg.generator_name,
             name="test",
             job_params=[{}],
-            is_preview=False,
+            is_preview=True,
             server=cfg.server,
         )
 
