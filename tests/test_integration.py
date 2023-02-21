@@ -227,7 +227,7 @@ class TestBatchEstimationIntegration:
         estimate = estimate_batch_samples(
             cfg.token,
             cfg.generator_name,
-            JobType.PREVIEW,
+            JobType.STANDARD,
             [{}, {}],
             "Test estimation",
             cfg.server,
