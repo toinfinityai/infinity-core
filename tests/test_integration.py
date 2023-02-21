@@ -56,17 +56,13 @@ class TestApiGetRequestIntegration:
 
     def test_get_single_preview_job_data(self, cfg: TestConfig) -> None:
         assert cfg.test_preview_job_id is not None
-        r = api.get_single_preview_job_data(
-            token=cfg.token, preview_id=cfg.test_preview_job_id, server=cfg.server
-        )
+        r = api.get_single_preview_job_data(token=cfg.token, preview_id=cfg.test_preview_job_id, server=cfg.server)
 
         assert r.ok
 
     def test_get_batch_preview_job_data(self, cfg: TestConfig) -> None:
         assert cfg.test_preview_batch_id is not None
-        r = api.get_batch_data(
-            token=cfg.token, batch_id=cfg.test_preview_batch_id, server=cfg.server
-        )
+        r = api.get_batch_data(token=cfg.token, batch_id=cfg.test_preview_batch_id, server=cfg.server)
 
         assert r.ok
 
@@ -85,9 +81,7 @@ class TestApiGetRequestIntegration:
 
     def test_get_batch_standard_job_data(self, cfg: TestConfig) -> None:
         assert cfg.test_standard_batch_id is not None
-        r = api.get_batch_data(
-            token=cfg.token, batch_id=cfg.test_standard_batch_id, server=cfg.server
-        )
+        r = api.get_batch_data(token=cfg.token, batch_id=cfg.test_standard_batch_id, server=cfg.server)
 
         assert r.ok
 
@@ -97,9 +91,7 @@ class TestApiGetRequestIntegration:
         assert r.ok
 
     def test_get_single_generator_data(self, cfg: TestConfig) -> None:
-        r = api.get_single_generator_data(
-            token=cfg.token, generator_name=cfg.generator_name, server=cfg.server
-        )
+        r = api.get_single_generator_data(token=cfg.token, generator_name=cfg.generator_name, server=cfg.server)
 
         assert r.ok
 
