@@ -193,7 +193,8 @@ third_batch_higher_res.await_completion()
 third_batch.download(path="higher_res_batch")
 ```
 
-# TODO document estimation for jobs
+# TODO document estimation for jobs. Visionfit 0.4.0 is not public and is the
+# only generator with sample estimation, so holding off for now in this package
 
 ### Using the `batch` module directly
 
