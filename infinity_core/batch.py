@@ -385,7 +385,7 @@ def submit_batch(
         r.raise_for_status()
         response_data = r.json()
     except Exception as e:
-        response_data = ''
+        response_data = ""
         try:
             response_data = r.json()
         except:
@@ -447,7 +447,7 @@ def estimate_batch_samples(
         r.raise_for_status()
         response_data = r.json()
     except Exception as e:
-        response_data = ''
+        response_data = ""
         try:
             response_data = r.json()
         except:
