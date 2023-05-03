@@ -381,12 +381,19 @@ def submit_batch(
         r = api.post_batch(
             token=token, generator=generator, name=name, job_params=job_params, is_preview=is_preview, server=server
         )
+
         r.raise_for_status()
         response_data = r.json()
     except Exception as e:
-        raise BatchSubmissionError(
-            f"Error submitting batch (name: {name}) for `{generator}` on the `{server}` server"
-        ) from e
+        response_data = ""
+        try:
+            response_data = r.json()
+        except:
+            pass
+        error_msg = f"Error submitting batch (name: {name}) for `{generator}` on the `{server}` server."
+        if response_data:
+            error_msg = error_msg + f" Response data: {response_data}"
+        raise BatchSubmissionError(error_msg) from e
     batch_id = response_data["id"]
     jobs = _parse_jobs_from_response_data(json_data=response_data, token=token, server=server)
 
@@ -440,8 +447,15 @@ def estimate_batch_samples(
         r.raise_for_status()
         response_data = r.json()
     except Exception as e:
-        raise BatchEstimationError(
-            f"Error estimating samples for batch (name: {name}) for `{generator}` on the `{server}` server"
-        ) from e
+        response_data = ""
+        try:
+            response_data = r.json()
+        except:
+            pass
+        error_msg = f"Error estimating samples for batch (name: {name}) for `{generator}` on the `{server}` server."
+        if response_data:
+            error_msg = error_msg + f" Response data: {response_data}"
+        raise BatchEstimationError(error_msg) from e
+
     samples_by_job: List[int] = response_data
     return samples_by_job
