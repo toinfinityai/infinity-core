@@ -343,44 +343,6 @@ def get_single_generator_data(token: str, generator_name: str, server: str = DEF
     return requests.get(url=url, headers=headers)
 
 
-def get_openapi_schema(
-    token: str, format: str = "yaml", language: str = "en", server: str = DEFAULT_SERVER
-) -> Response:
-    """Get OpenAPI schema information for the Infinity REST API.
-
-    Args:
-        token: User authentication token.
-        format: Output format; must be one of {'yaml', 'json'}.
-        language: String specifying the target language.
-        server: Base server URL.
-
-    Returns:
-        HTTP request response.
-
-    Raises:
-        ValueError: If an unsupported OpenAPI schema format is provided.
-    """
-    headers_set = {HeaderKind.AUTH}
-    query_parameters = dict()
-    if format == "yaml":
-        headers_set.add(HeaderKind.ACCEPT_OPENAPI_YAML)
-        query_parameters["format"] = format
-    elif format == "json":
-        headers_set.add(HeaderKind.ACCEPT_OPENAPI_JSON)
-        query_parameters["format"] = format
-    else:
-        raise ValueError(f"Unsupported OpenAPI schema format: `{format}` must be `yaml` or `json`")
-    query_parameters["lang"] = language
-    url, headers = build_request(
-        token=token,
-        server=server,
-        endpoint="api/schema/",
-        headers=headers_set,
-        query_parameters=query_parameters,
-    )
-    return requests.get(url=url, headers=headers)
-
-
 def get_usage_datetime_range(
     token: str,
     start_time: Optional[datetime] = None,

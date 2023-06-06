@@ -95,11 +95,6 @@ class TestApiGetRequestIntegration:
 
         assert r.ok
 
-    def test_get_openapi_schema(self, cfg: TestConfig) -> None:
-        r = api.get_openapi_schema(token=cfg.token, server=cfg.server)
-
-        assert r.ok
-
     def test_get_usage_datetime_range(self, cfg: TestConfig) -> None:
         r = api.get_usage_datetime_range(token=cfg.token, server=cfg.server)
 
